@@ -1,0 +1,1660 @@
+Code Lite
+==================================================
+Description: This file contains Coq code with proof sections removed
+Processed files: 22
+Failed files: 0
+============================================================
+File: log2_p.v
+============================================================
+Require Import Nat.
+Require Import Lia.
+Require Import PeanoNat.
+Require Import Arith.
+Require Import Coq.Classes.RelationClasses.
+Require Import NZAxioms NZMulOrder NZPow.
+Module LogarithmDefs.
+(** Base-2 Logarithm *)
+(** Interface of a log2 function, then its specification on naturals *)
+Module Type Log2 (Import A : Typ).
+ Parameter Inline log2 : t -> t.
+End Log2.
+Module Type NZLog2Spec (A : NZOrdAxiomsSig')(B : Pow' A)(C : Log2 A).
+ Import A B C.
+ Axiom log2_spec : forall a, 0<a -> 2^(log2 a) <= a < 2^(S (log2 a)).
+ Axiom log2_nonpos : forall a, a<=0 -> log2 a == 0.
+End NZLog2Spec.
+Module Type NZLog2 (A : NZOrdAxiomsSig)(B : Pow A) := Log2 A <+ NZLog2Spec A B.
+Module Type NZLog2Prop
+ (Import A : NZOrdAxiomsSig')
+ (Import B : NZPow' A)
+ (Import C : NZLog2 A B)
+ (Import D : NZMulOrderProp A)
+ (Import E : NZPowProp A B D).
+Lemma log2_upper_bound : forall n,
+  1 <= n ->
+  2^(log2 n) <= n.
+.
+  End NZLog2Prop.
+End LogarithmDefs.
+(* Basic properties of log2 *)
+Lemma log2_spec_high : forall n,
+  n >= 1 ->
+  n < 2^(S (log2 n)).
+.
+(* Basic properties of log2 *)
+Lemma log2_lower_bound : forall n,
+  n >= 1 ->
+  2^(log2 n) > n/2.
+.
+(* Log2 related theorems prepared for bounded arithmetic properties of consecutive D stacked R1R0 *)
+(* Basic properties of logarithm *)
+Lemma log2_monotone : forall x y, x <= y -> log2 x <= log2 y.
+.
+Lemma log2_mult_power2 : forall x, x > 0 -> log2(2 * x) = log2(x) + 1.
+.
+Lemma log2_power2 : forall d, log2(2^d) = d.
+.
+(* Linear approximation property of logarithm (weaker form, used for subsequent estimation) *)
+Lemma log2_approx_linear : forall x y,
+  x >= 1 -> y >= 1 ->
+  log2(x) - log2(y) <= log2(x) + 1.
+.
+(* Lower bound estimation of logarithm *)
+Lemma log2_lower_bound_strong : forall x,
+  x >= 1 ->
+  log2(x) >= 0.
+.
+============================================================
+File: collatz_part_1.v
+============================================================
+Require Import Nat.
+Require Import List.
+Import ListNotations.
+Require Import Lia.   
+Require Import PeanoNat.
+Require Import Ring.
+Require Import Arith.  
+Require Import ArithRing.
+Require Import Coq.Classes.RelationClasses.
+Require Import Coq.Arith.Div2.
+Load "log2_p.v".
+(* Define Collatz operations   Documentation uses Coq 8.10.2 version *)
+Inductive CollatzOp : Type :=
+  | R0 : CollatzOp
+  | R1 : CollatzOp.
+(* Define the property of valid input *)
+Definition valid_input (n: nat) := n >= 1.
+(* Helper definition: convert bool to Prop *)
+Definition is_even (n: nat) := Nat.even n = true.
+Definition is_odd (n: nat) := Nat.even n = false.
+(* Define single-step Collatz operation *)
+Definition collatz_step (n : nat) : nat :=
+  if Nat.even n then n / 2
+  else 3 * n + 1.
+(* Entry function definition *)
+Definition valid_R0R1_entry_number (d n: nat) : nat :=
+  (2 * (2^d) * n) + (2^d - 2).
+(* Define entry function *)
+Definition valid_R0R0_entry_number (d n: nat) : nat :=
+  n * (2^d).
+(* R1R0 entry function definition *)
+Definition valid_R1R0_entry_number (d n: nat) : nat :=
+  (2 * (2^d) * n) + (2^d - 1).
+(* Define counting R0 function *)
+Fixpoint count_R0 (ops: list CollatzOp) : nat :=
+match ops with
+| [] => 0
+| R0 :: rest => S (count_R0 rest)
+| R1 :: rest => count_R0 rest
+end.
+(* Define counting R1 function *)
+Fixpoint count_R1 (ops: list CollatzOp) : nat :=
+match ops with
+| [] => 0
+| R0 :: rest => count_R1 rest
+| R1 :: rest => S (count_R1 rest)
+end.
+(* Define counting function for R0 and R1 in sequence *)
+Fixpoint count_operations (ops: list CollatzOp) : (nat * nat) :=
+  match ops with
+  | nil => (0, 0)
+  | op :: rest =>
+    let (r0s, r1s) := count_operations rest in
+    match op with
+    | R0 => (S r0s, r1s)
+    | R1 => (r0s, S r1s)
+    end
+  end.
+(* Define valid operation *)
+Definition valid_operation (n: nat) (op: CollatzOp) : Prop :=
+  match op with
+  | R0 => is_even n
+  | R1 => is_odd n
+  end.
+(* Define the k-th value in sequence *)
+Fixpoint nth_sequence_value (n: nat) (k: nat) : nat :=
+  match k with
+  | 0 => n
+  | S k' => collatz_step (nth_sequence_value n k')
+  end.
+(* Define the final value of sequence *)
+Definition sequence_end (n: nat) (ops: list CollatzOp) : nat :=
+  nth_sequence_value n (length ops).
+(* Define sequence validity: each operation in the sequence is legal *)
+Definition valid_sequence (ops: list CollatzOp) (n: nat) : Prop :=
+  forall i, i < length ops ->
+    valid_operation (nth_sequence_value n i) (nth i ops R0).
+(* R0 pattern repetition constructor - can handle single R0 and consecutive R0 *)
+Fixpoint repeat_R0 (d: nat) : list CollatzOp :=
+  match d with
+  | 0 => []
+  | S d' => R0 :: repeat_R0 d'
+  end.
+(*    This function constructs an operation list containing D consecutive R1R0 operation pairs *)
+Fixpoint repeat_R1R0 (d: nat) : list CollatzOp :=
+  match d with
+  | 0 => []
+  | S d' => R1 :: R0 :: repeat_R1R0 d'
+  end.
+(* Consecutive R0 pattern counting function *)
+Fixpoint count_consecutive_R0 (ops: list CollatzOp) : nat :=
+  match ops with
+  | [] => 0
+  | R0 :: rest => 1 + count_consecutive_R0 rest
+  | _ => 0
+  end.
+(* Consecutive R1R0 pattern counting *)
+Fixpoint count_consecutive_R1R0 (ops: list CollatzOp) : nat :=
+  match ops with
+  | [] => 0
+  | [_] => 0
+  | R1 :: R0 :: rest => S (count_consecutive_R1R0 rest)
+  | _ :: rest => count_consecutive_R1R0 rest
+  end.
+(* Main theorem structure *)
+Fixpoint build_k_steps (n: nat) (k: nat) : list CollatzOp :=
+  match k with
+  | 0 => []
+  | S k' =>
+    let prev_ops := build_k_steps n k' in
+    let curr_n := sequence_end n prev_ops in
+    if Nat.even curr_n
+    then prev_ops ++ [R0]          (* Even: add R0 *)
+    else prev_ops ++ [R1; R0]      (* Odd: add R1R0 *)
+  end.
+============================================================
+File: collatz_part_2.v
+============================================================
+Load "collatz_part_1.v". 
+(* Helper lemma: when Nat.even n = false, n is odd *)
+Lemma even_false_implies_odd : forall n,
+  Nat.even n = false -> is_odd n.
+.
+(* Helper lemma: when Nat.even n = true, n is even *)
+Lemma even_true_implies_even : forall n,
+  Nat.even n = true -> is_even n.
+.
+(* Immediate lemma: 2*x is always even *)
+Lemma even_2x : forall x, Nat.even (2 * x) = true.
+.
+(* Lemma: power of 2 is greater than 0 *)
+Lemma gt_0_2_pow : forall n, 2^n > 0.
+.
+(* Lemma: power of 2 is greater than or equal to 2 *)
+Lemma pow2_ge_2 : forall n,
+  n >= 1 -> 2^n >= 2.
+.
+(* n mod 2 = 1 implies n is odd *)
+Lemma mod2_eq1_implies_is_odd : forall n,
+  n mod 2 = 1 -> is_odd n.
+.
+(* pow2_gt_0 *)
+Lemma pow2_gt_0 : forall n,
+  2^n > 0.
+.
+(* Properties of even numbers divided by 2 *)
+Lemma even_div2_mul2 : forall k,
+  k >= 1 ->
+  (2 * k) / 2 = k.
+.
+(* First prove the relationship between divmod and division *)
+Lemma div2_divmod_eq : forall n,
+  n / 2 = fst (divmod n 1 0 1).
+.
+(* Even number greater than or equal to 1 must be greater than or equal to 2 *)
+Lemma even_ge_1_implies_ge_2 : forall n,
+  n >= 1 ->
+  is_even n ->
+  n >= 2.
+.
+(* Theorem: 2^d - 1 is odd *)
+Lemma pow2_minus_1_odd : forall d,
+  d >= 1 -> is_odd (2^d - 1).
+.
+(* Helper lemma: when d>=2, 2^d is even *)
+Lemma pow2_even_when_ge_2 : forall d,
+  d >= 2 -> is_even (2^d).
+.
+  (* Even number decomposition lemma *)
+Lemma even_decomposition : forall n,
+  is_even n -> exists k, n = 2 * k.
+.
+  (* Odd number decomposition lemma *)
+Lemma odd_decomposition : forall n,
+  is_odd n -> exists k, n = 2 * k + 1.
+.
+(* Power of 2 odd decomposition lemma *)
+Lemma power2_odd_decomposition : forall N,
+  N >= 2 -> is_even N ->
+  exists d q, d >= 1 /\ q >= 1 /\ N = 2^d * q /\ is_odd q.
+.
+(* 3n+1 outputs even number *)
+Lemma even_3n_plus_1 : forall n,
+  is_odd n ->
+  is_even (3 * n + 1).
+.
+============================================================
+File: collatz_part_3.v
+============================================================
+Load "collatz_part_2.v".
+(* Basic properties of R1R0 entry number: >=1 and odd *)
+Lemma valid_R1R0_entry_number_properties : forall d n,
+  d >= 1 -> n >= 0 ->
+  let m := valid_R1R0_entry_number d n in
+  m >= 1 /\ is_odd m.
+.
+(* Basic properties of R0R0 entry number: >=2 and even *)
+Lemma valid_R0R0_entry_number_properties : forall d n,
+  d >= 1 -> n >= 1 ->
+  let m := valid_R0R0_entry_number d n in
+  m >= 2 /\ is_even m.
+.
+(* Any odd number greater than 1 can be uniquely expressed as an R1R0 entry number *)
+Lemma odd_eq_R1R0_entry_number :
+  forall m, m >= 1 -> is_odd m ->
+    exists d n, d >= 1 /\ n >= 0 /\
+      m = valid_R1R0_entry_number d n.
+.
+(* Any even number greater than 1 can be uniquely expressed as an R0R0 entry number *)
+Lemma even_eq_R0R0_entry_number :
+  forall m, m >= 1 -> is_even m ->
+    exists d n, d >= 1 /\ n >= 1 /\
+      m = valid_R0R0_entry_number d n.
+.
+(* Complete classification of positive integers: odd numbers as R1R0 entries, even numbers as R0R0 entries *)
+Theorem complete_number_classification :
+  forall m, m >= 1 ->
+    (is_odd m /\ exists d n, d >= 1 /\ n >= 0 /\ m = valid_R1R0_entry_number d n) \/
+    (is_even m /\ exists d n, d >= 1 /\ n >= 1 /\ m = valid_R0R0_entry_number d n).
+.
+(* Power expansion: 3^(S k) = 3 * 3^k *)
+Lemma pow3_expand : forall k, 3 ^ S k = 3 * 3 ^ k.
+.
+(* Existence expression for 3^k being odd *)
+Lemma pow3_is_odd : forall k, exists y, 3 ^ k = 2 * y + 1.
+.
+(* Existence expression for 3^k-1 being even *)
+Lemma pow3_minus1_even : forall k, exists y, 3 ^ k - 1 = 2 * y.
+.
+(* 3^k >= 1 *)
+Lemma pow3_ge1 : forall k, 1 <= 3 ^ k.
+.
+(* Simple positivity lemma for 3^D (standard recursive definition of Nat.pow) *)
+Lemma pow3_pos : forall D, 0 < 3 ^ D.
+.
+============================================================
+File: collatz_part_4.v
+============================================================
+Load "collatz_part_3.v".
+(* 2. Validity of single-step operation *)
+Lemma single_step_valid : forall n op,
+  valid_input n ->
+  valid_operation n op ->
+  valid_input (collatz_step n).
+.
+(* Inductive property of sequence validity *)
+Lemma valid_sequence_inductive : forall n ops,
+  valid_input n ->
+  (forall i, i < length ops -> valid_operation (nth_sequence_value n i) (nth i ops R0)) ->
+  forall k, k <= length ops ->
+  valid_input (nth_sequence_value n k).
+.
+(* Recursive property of sequence values *)
+Lemma nth_sequence_value_succ : forall n i,
+  nth_sequence_value n (S i) = collatz_step (nth_sequence_value n i).
+.
+============================================================
+File: collatz_part_5.v
+============================================================
+(* noya2012@126.com 306000250@qq.com  zeng  *)
+Load "collatz_part_4.v".
+(* Validity of sequence end value *)
+Lemma sequence_end_valid : forall n ops,
+  valid_input n ->
+  valid_sequence ops n ->
+  valid_input (sequence_end n ops).
+.
+(* Add the last element at position *)
+Lemma nth_append_last : forall (l : list CollatzOp) (x : CollatzOp),
+  nth (length l) (l ++ [x]) R0 = x.
+.
+(* Property: After adding R0, R0 count increases by 1, R1 count remains unchanged *)
+Lemma count_operations_app_R0 : forall ops,
+  let (r0s, r1s) := count_operations ops in
+  let (new_r0s, new_r1s) := count_operations (ops ++ [R0]) in
+  new_r0s = r0s + 1 /\ new_r1s = r1s.
+.
+(* Property: After adding R1R0, R0 count increases by 1, R1 count increases by 1 *)
+Lemma nth_append_two : forall (l : list CollatzOp) (x y : CollatzOp),
+  nth (length l) (l ++ [x; y]) R0 = x /\
+  nth (S (length l)) (l ++ [x; y]) R0 = y.
+.
+(* Property: After adding R1R0, R0 count increases by 1, R1 count increases by 1 *)
+Lemma count_operations_app_R1R0 : forall ops,
+  let (r0s, r1s) := count_operations ops in
+  let (r0s_new, r1s_new) := count_operations (ops ++ [R1; R0]) in
+  r0s_new = S r0s /\ r1s_new = S r1s.
+.
+(* Lemma: Sum of R0 and R1 counts equals total length *)
+Lemma count_sum_c2 : forall ops,
+  let (r0s, r1s) := count_operations ops in
+  r0s + r1s = length ops.
+.
+============================================================
+File: collatz_part_6.v
+============================================================
+Load "collatz_part_5.v".
+(* Properties of sequence construction *)
+Lemma build_k_steps_valid : forall n k,
+  valid_input n ->
+  valid_sequence (build_k_steps n k) n.
+.
+(* Auxiliary lemma about sequence construction *)
+Lemma build_k_steps_Sn : forall n k,
+  valid_input n ->
+  build_k_steps n (S k) =
+  let prev_ops := build_k_steps n k in
+  let curr_n := sequence_end n prev_ops in
+  if Nat.even curr_n
+  then prev_ops ++ [R0]
+  else prev_ops ++ [R1; R0].
+.
+(* Sequence length is at least k and at most 2k *)
+Lemma build_k_steps_length_bound : forall n k,
+  valid_input n ->
+  k <= length (build_k_steps n k) <= 2 * k.
+.
+(* R0 count equals k *)
+Lemma R0_count_eq_k : forall n k ops,
+  valid_input n ->
+  k >= 1 ->
+  build_k_steps n k = ops ->
+  let (r0s, _) := count_operations ops in
+  r0s = k.
+.
+============================================================
+File: collatz_part_7.v
+============================================================
+Load "collatz_part_6.v".
+(* When the sequence starts with R0, consecutive R1R0 count and R1 count remain unchanged *)
+Lemma congruent_R0_prefix: forall t2,
+  count_consecutive_R1R0 (R0 :: t2) = count_consecutive_R1R0 t2 /\
+  count_R1 (R0 :: t2) = count_R1 t2.
+.
+(* Connection property of nth_sequence_value *)
+Lemma nth_sequence_value_app : forall n k1 k2,
+  nth_sequence_value n (k1 + k2) = nth_sequence_value (nth_sequence_value n k1) k2.
+.
+(* Connection property of sequence end value *)
+Lemma sequence_end_app : forall n ops1 ops2,
+  sequence_end n (ops1 ++ ops2) = sequence_end (sequence_end n ops1) ops2.
+.
+============================================================
+File: collatz_part_8.v
+============================================================
+Load "collatz_part_7.v".
+(* Valid input and parity in R1R0 pattern *)
+Lemma R1R0_two_steps_reduce : forall d n,
+  d >= 1 -> n >= 0 ->
+  let m := valid_R1R0_entry_number d n in
+  (3 * m + 1) = 2 * valid_R1R0_entry_number (d - 1) (3 * n + 1).
+.
+(* Lemma for sequence end value connection calculation - combined with R1R0_two_steps_reduce to derive R1R0_pattern_closure *)
+Lemma sequence_end_two_steps : forall n,
+  valid_input n ->
+  is_odd n ->
+  sequence_end n [R1; R0] = (3 * n + 1) / 2.
+.
+ (* R1R0 pattern closure *)
+Lemma R1R0_pattern_closure : forall d n,
+  d >= 1 -> n >= 0 ->
+  let m := valid_R1R0_entry_number d n in
+  sequence_end m [R1; R0] = valid_R1R0_entry_number (d-1) (3*n+1).
+.
+============================================================
+File: collatz_part_9.v
+============================================================
+Load "collatz_part_8.v".
+(* When D = 1: On the corresponding entry, repeat_R1R0 generates [R1; R0], and the consecutive R1R0 count is 1 *)
+Lemma valid_R1R0_d1_produces_R1R0 : forall n,
+  n >= 0 ->
+  let m := valid_R1R0_entry_number 1 n in
+  valid_sequence [R1; R0] m /\ count_consecutive_R1R0 [R1; R0] = 1.
+.
+(* The length of repeat_R1R0 is exactly 2 * d *)
+Lemma repeat_R1R0_length : forall d,
+  length (repeat_R1R0 d) = 2 * d.
+.
+(* The number of consecutive R1R0 patterns in repeat_R1R0 equals d *)
+Lemma repeat_R1R0_count : forall d,
+  count_consecutive_R1R0 (repeat_R1R0 d) = d.
+.
+(* For any D >= 1: when m = valid_R1R0_entry_number D n,
+repeat_R1R0 D is valid on m and contains D consecutive R1R0 patterns *)
+Lemma valid_R1R0_produces_R1R0_general : forall D n,
+  D >= 1 ->
+  n >= 0 ->
+  let m := valid_R1R0_entry_number D n in
+  valid_sequence (repeat_R1R0 D) m /\
+  count_consecutive_R1R0 (repeat_R1R0 D) = D.
+.
+(* If m = valid_R1R0_entry_number d n, then repeat_R1R0 d is valid on m and the count is d *)
+Lemma R1R0_entry_number_produces_repeat : forall d n,
+  d >= 1 -> n >= 0 ->
+  let m := valid_R1R0_entry_number d n in
+  valid_sequence (repeat_R1R0 d) m /\ count_consecutive_R1R0 (repeat_R1R0 d) = d.
+.
+(* Special case d = 0: valid_R1R0_entry_number 0 n = 2 * n *)
+Lemma valid_R1R0_entry_number_d0 : forall n,
+  valid_R1R0_entry_number 0 n = 2 * n.
+.
+(* For D >= 1: The final value after applying repeat_R1R0 D on the corresponding entry is even (exists k such that it equals 2*k)
+To reach a power of 2, this means 3^D * n + (3^D - 1)/2 = n₂ * 2^D₂, Catalan theorem *)
+Lemma repeat_R1R0_output_even : forall D n,
+  D >= 1 -> n >= 0 ->
+  let m := valid_R1R0_entry_number D n in
+  exists k, sequence_end m (repeat_R1R0 D) = 2 * k.
+.
+(* Catalan theorem application: 3^a - 2^b = 1 only has solution (a,b) = (2,3)*)
+Lemma arithmetic_identity_for_R1R0 : forall k n,
+  k >= 0 -> n >= 0 ->
+  3^(S k) * n + (3^(S k) - 1) / 2 =
+  3^k * (3*n+1) + (3^k - 1) / 2.
+.
+(* In R1R0 mode, expression of final value under repeat_R1R0 prefix application *)
+Lemma sequence_end_valid_R1R0_prefix : forall D n k,
+  D >= 1 -> n >= 0 ->
+  k <= D ->
+  sequence_end (valid_R1R0_entry_number D n) (repeat_R1R0 k) =
+  valid_R1R0_entry_number (D - k) (3^k * n + (3^k - 1) / 2).
+.
+(* R1R0 entry numbers are always odd *)
+Lemma valid_R1R0_entry_number_odd : forall d n,
+  d >= 1 -> n >= 0 ->
+  Nat.even (valid_R1R0_entry_number d n) = false.
+.
+(* Appending a pair to the end of repeat_R1R0 equals S times repeat *)
+Lemma repeat_R1R0_snoc : forall k,
+  repeat_R1R0 k ++ [R1; R0] = repeat_R1R0 (S k).
+.
+(* For R1R0 entry numbers, build_k_steps generates k pairs of R1R0 operations *)
+Lemma build_k_steps_on_valid_R1R0_prefix_simple : forall D n k,
+  D >= 1 -> n >= 0 ->
+  k <= D ->
+  build_k_steps (valid_R1R0_entry_number D n) k = repeat_R1R0 k.
+.
+(* For R1R0 entry numbers, build_k_steps generates D pairs of R1R0 operations (fully expanded) *)
+Lemma build_k_steps_on_valid_R1R0 : forall D n,
+  D >= 1 -> n >= 0 ->
+  build_k_steps (valid_R1R0_entry_number D n) D = repeat_R1R0 D.
+.
+============================================================
+File: collatz_part_10.v
+============================================================
+Load "collatz_part_9.v".
+(* The length of the list generated by repeat_R0 equals d *)
+Lemma repeat_R0_length : forall d,
+  length (repeat_R0 d) = d.
+.
+(* The number of consecutive R0 patterns in repeat_R0 (when d>=1) equals d *)
+Lemma repeat_R0_consecutive_count : forall d,
+  d >= 1 ->
+  count_consecutive_R0 (repeat_R0 d) = d.
+.
+(* Validity of operation sequence corresponding to R0 entry number when d=1 *)
+Lemma valid_R0_d1_produces_R0 : forall n,
+  n >= 1 ->
+  let m := valid_R0R0_entry_number 1 n in
+  valid_sequence [R0] m /\ count_consecutive_R0 [R0] = 1.
+.
+(* Recursive closure property of R0 pattern *)
+Lemma R0_pattern_closure : forall d n,
+  d >= 2 -> n >= 1 ->
+  let m := valid_R0R0_entry_number d n in
+  sequence_end m [R0] = valid_R0R0_entry_number (d-1) (n).
+.
+(* Validity and count of repeat_R0 D generated by R0 entry number *)
+Lemma valid_R0_produces_R0_general : forall D n,
+  D >= 1 ->
+  n >= 1 ->
+  let m := valid_R0R0_entry_number D n in
+  valid_sequence (repeat_R0 D) m /\
+  count_consecutive_R0 (repeat_R0 D) = D.
+.
+(* Validity and count of repeat_R0 d generated by R0 entry number (simplified wrapper) *)
+Lemma R0_entry_number_produces_repeat : forall d n,
+  d >= 1 -> n >= 1 ->
+  let m := valid_R0R0_entry_number d n in
+  valid_sequence (repeat_R0 d) m /\ count_consecutive_R0 (repeat_R0 d) = d.
+.
+(* Validity and count of repeat_R0 d generated by R0R0 entry number (alias) *)
+Lemma R0R0_entry_number_produces_repeat : forall d n,
+  d >= 1 -> n >= 1 ->
+  let m := valid_R0R0_entry_number d n in
+  valid_sequence (repeat_R0 d) m /\ count_consecutive_R0 (repeat_R0 d) = d.
+.
+(* Final value after repeat_R0 D operation is n *)
+Lemma repeat_R0_output_reaches_one : forall D n,
+  D >= 1 -> n >= 1 ->
+  let m := valid_R0R0_entry_number D n in
+  sequence_end m (repeat_R0 D) = n.
+.
+(* Corollary: When n=1, the output after D consecutive R0 operations is 1 *)
+Corollary repeat_R0_output_one_when_n_one : forall D,
+  D >= 1 ->
+  let m := valid_R0R0_entry_number D 1 in
+  sequence_end m (repeat_R0 D) = 1.
+.
+(* When n is odd, the final value after repeat_R0 D operation remains odd *)
+Lemma repeat_R0_output_odd_if_n_odd : forall D n,
+  D >= 1 -> n >= 1 ->
+  let m := valid_R0R0_entry_number D n in
+  Nat.odd n = true ->
+  Nat.odd (sequence_end m (repeat_R0 D)) = true.
+.
+(* Expression of final value under repeat_R0 k prefix application *)
+Lemma sequence_end_valid_R0_prefix : forall D n k,
+  D >= 1 -> n >= 1 ->
+  k <= D ->
+  let m := valid_R0R0_entry_number D n in
+  sequence_end m (repeat_R0 k) = valid_R0R0_entry_number (D - k) n.
+.
+(* Appending a single R0 to the end of repeat_R0 equals S times repeat *)
+Lemma repeat_R0_append_single : forall k,
+  repeat_R0 k ++ [R0] = repeat_R0 (S k).
+.
+(* build_k_steps generates k R0 operations from R0R0 entry number *)
+Lemma build_k_steps_on_valid_R0R0_prefix : forall D n k,
+  D >= 1 -> n >= 1 ->
+  k <= D ->
+  let m := valid_R0R0_entry_number D n in
+  build_k_steps m k = repeat_R0 k.
+.
+(* build_k_steps fully generates repeat_R0 D from R0R0 entry number *)
+Lemma build_k_steps_on_valid_R0R0 : forall D n,
+  D >= 1 -> n >= 1 ->
+  let m := valid_R0R0_entry_number D n in
+  build_k_steps m D = repeat_R0 D.
+.
+============================================================
+File: collatz_part_11.v
+============================================================
+Load "collatz_part_10.v".
+(* Pattern Completeness Theorem *)
+Theorem build_k_steps_pattern_completeness : forall m,
+	m >= 1 ->
+	(exists d n, d >= 1 /\ n >= 0 /\ m = valid_R1R0_entry_number d n /\
+							 build_k_steps m d = repeat_R1R0 d) \/
+	(exists d n, d >= 1 /\ n >= 1 /\ m = valid_R0R0_entry_number d n /\
+							 build_k_steps m d = repeat_R0 d).
+.
+(* R1R0 Sequence Final Value Exact Closed Form *)
+Lemma repeat_R1R0_output_closed_form : forall D n,
+	D >= 1 -> n >= 0 ->
+	sequence_end (valid_R1R0_entry_number D n) (repeat_R1R0 D)
+		= 2 * (3^D * n + (3^D - 1) / 2).
+.
+(* Multiple Property of 3^D minus 1 *)
+Lemma pow3_minus1_twice_half : forall D,
+	2 * ((3^D - 1) / 2) = 3^D - 1.
+.
+(* Corollary of R1R0 Final Value Closed Form *)
+Corollary repeat_R1R0_output_closed_form_no_div : forall D n,
+  D >= 1 -> n >= 0 ->
+  sequence_end (valid_R1R0_entry_number D n) (repeat_R1R0 D) = 2 * 3^D * n + (3^D - 1).
+.
+(* R1R0 Final Value Upper Bound *)
+Lemma repeat_R1R0_output_upper_bound : forall D n,
+	D >= 1 -> n >= 0 ->
+	sequence_end (valid_R1R0_entry_number D n) (repeat_R1R0 D) <= 3^D * (2 * n + 1).
+.
+(* R1R0 Final Value Linear Lower Bound: >= 2 * 3^D * n *)
+Lemma repeat_R1R0_output_lower_bound_linear : forall D n,
+	D >= 1 -> n >= 0 ->
+	2 * 3^D * n <= sequence_end (valid_R1R0_entry_number D n) (repeat_R1R0 D).
+.
+(* R1R0 Final Value Constant Lower Bound: >= 3^D - 1 *)
+Lemma repeat_R1R0_output_lower_bound_const : forall D n,
+	D >= 1 -> n >= 0 ->
+	3^D - 1 <= sequence_end (valid_R1R0_entry_number D n) (repeat_R1R0 D).
+.
+(* R1R0 Combined Bounds Summary: max(2*3^D*n, 3^D - 1) <= output <= 3^D*(2n+1) *)
+Theorem R1R0_bounds_summary : forall D n,
+	D >= 1 -> n >= 0 ->
+	let out := sequence_end (valid_R1R0_entry_number D n) (repeat_R1R0 D) in
+		(2 * 3^D * n <= out) /\ (3^D - 1 <= out) /\ out <= 3^D * (2*n + 1).
+.
+(* Necessary and sufficient condition for R1R0 sequence output to be a power of 2 *)
+Theorem R1R0_power_iff :
+  forall d n k,
+    d >= 1 -> n >= 0 ->
+    (sequence_end (valid_R1R0_entry_number d n) (repeat_R1R0 d) = 2 ^ k) <->
+    (2 ^ k + 1 = 3 ^ d * (2 * n + 1)).
+.
+(* R1R0 sequence output modulo 6 equals 2 *)
+Lemma R1R0_output_mod6 : forall d n, d >= 1 -> n >= 0 -> 
+  sequence_end (valid_R1R0_entry_number d n) (repeat_R1R0 d) mod 6 = 2.
+.
+(* R1R0 sequence output set is equivalent to numbers congruent to 2 mod 6 *)
+Lemma R1R0_output_set_iff : forall m,
+  (exists d n, d >= 1 /\ n >= 0 /\ m = sequence_end (valid_R1R0_entry_number d n) (repeat_R1R0 d)) <-> m mod 6 = 2.
+.
+============================================================
+File: collatz_part_12.v
+============================================================
+Load "collatz_part_11.v".
+(* R0R0 Input Lower Bound *)
+Lemma R0R0_input_ge_n : forall D n,
+  D >= 1 -> n >= 1 ->
+  let m := valid_R0R0_entry_number D n in n <= m.
+.
+(* R0R0 Final Value Exactness *)
+Lemma R0R0_output_exact_n : forall D n,
+  D >= 1 -> n >= 1 ->
+  let m := valid_R0R0_entry_number D n in
+  sequence_end m (repeat_R0 D) = n.
+.
+(* R0R0 Output Value Bounds *)
+Lemma R0R0_output_bounds : forall D n,
+  D >= 1 -> n >= 1 ->
+  let m := valid_R0R0_entry_number D n in
+  1 <= sequence_end m (repeat_R0 D) /\ sequence_end m (repeat_R0 D) <= m.
+.
+(* R0R0 Output Minimum Value *)
+Lemma R0R0_output_minimal_when_one : forall D,
+  D >= 1 ->
+  let m := valid_R0R0_entry_number D 1 in
+  sequence_end m (repeat_R0 D) = 1.
+.
+(* R0R0 Combined Bounds Summary Theorem *)
+Theorem R0R0_bounds_summary : forall D n,
+  D >= 1 -> n >= 1 ->
+  let m := valid_R0R0_entry_number D n in
+    1 <= n /\ n <= m /\ sequence_end m (repeat_R0 D) = n.
+.
+(* Combined Bounds General Theorem *)
+Theorem build_k_steps_numeric_bounds_exists : forall m,
+  m >= 1 ->
+  (exists d n, d >= 1 /\ n >= 0 /\
+      m = valid_R1R0_entry_number d n /\
+      build_k_steps m d = repeat_R1R0 d /\
+      2 * 3^d * n <= sequence_end (valid_R1R0_entry_number d n) (repeat_R1R0 d) /\
+      3^d - 1 <= sequence_end (valid_R1R0_entry_number d n) (repeat_R1R0 d) /\
+      sequence_end (valid_R1R0_entry_number d n) (repeat_R1R0 d) <= 3^d * (2 * n + 1)) \/
+  (exists d n, d >= 1 /\ n >= 1 /\
+      m = valid_R0R0_entry_number d n /\
+      build_k_steps m d = repeat_R0 d /\
+      1 <= n /\ n <= m /\
+      sequence_end (valid_R0R0_entry_number d n) (repeat_R0 d) = n).
+.
+(* Comprehensive Bounds Main Theorem *)
+============================================================
+File: collatz_part_13.v
+============================================================
+Load "collatz_part_12.v".
+(* If n >= 1, then 2^n is even *)
+Lemma power_2_even_property : forall n : nat, n >= 1 -> Nat.even (2^n) = true.
+.
+(* If d1 ≤ d2, then cancel left 2^d1 to get o1 = 2^(d2-d1) * o2 *)
+Lemma pow_cancel_lower : forall d1 d2 o1 o2,
+  d1 <= d2 ->
+  2 ^ d1 * o1 = 2 ^ d2 * o2 ->
+  o1 = 2 ^ (d2 - d1) * o2.
+.
+(* If d1 ≤ d2 and o1,o2 are odd, then 2^d1*o1 = 2^d2*o2 implies d1=d2 and o1=o2 *)
+Lemma pow2_times_odd_unique_le : forall d1 d2 o1 o2,
+  d1 <= d2 -> d1 >= 1 -> d2 >= 1 ->
+  Nat.even o1 = false -> Nat.even o2 = false ->
+  2 ^ d1 * o1 = 2 ^ d2 * o2 ->
+  d1 = d2 /\ o1 = o2.
+.
+(* Unique decomposition of 2^d * odd number (order of d1,d2 not required) *)
+Lemma pow2_times_odd_unique : forall d1 d2 o1 o2,
+  d1 >= 1 -> d2 >= 1 ->
+  Nat.even o1 = false -> Nat.even o2 = false ->
+  2 ^ d1 * o1 = 2 ^ d2 * o2 ->
+  d1 = d2 /\ o1 = o2.
+.
+(* valid_R1R0_entry_number d n plus 1 can be expressed as 2^d*(2*n+1) *)
+Lemma valid_R1R0_entry_number_plus1 :
+  forall d n, valid_R1R0_entry_number d n + 1 = 2 ^ d * (2 * n + 1).
+.
+(* R1R0 Uniqueness Decomposition *)
+Lemma R1R0_decomposition_unique : forall m d1 d2 n1 n2,
+  is_odd m ->
+  d1 >= 1 -> d2 >= 1 -> n1 >= 0 -> n2 >= 0 ->
+  m = valid_R1R0_entry_number d1 n1 ->
+  m = valid_R1R0_entry_number d2 n2 ->
+  d1 = d2 /\ n1 = n2.
+.
+  (* R0R0 Uniqueness Decomposition *)
+  Lemma R0R0_decomposition_unique :
+    forall m d1 d2 n1 n2,
+      m = valid_R0R0_entry_number d1 n1 ->
+      m = valid_R0R0_entry_number d2 n2 ->
+      is_odd n1 ->
+      is_odd n2 ->
+      d1 = d2 /\ n1 = n2.
+.
+============================================================
+File: collatz_part_14.v
+============================================================
+Load "collatz_part_13.v".
+(* Odd Branch Existence Lemma *)
+(* Normalize R0R0 entry (d,n) to n' odd (absorbing 2 factors from n), preserving value *)
+Lemma R0R0_canonical_factorization :
+  forall d n, d >= 1 -> n >= 1 ->
+    exists d' n', d' >= 1 /\ n' >= 1 /\ is_odd n' /\
+                  valid_R0R0_entry_number d n = valid_R0R0_entry_number d' n'.
+.
+(* Complete Number Canonical Classification: Every positive integer uniquely belongs to R1R0 or R0R0 branch *)
+(* R1R0 Strict Upper Bound: Prove S is strictly less than 2*3^d*(n+1) *)
+Lemma tighten_R1R0_strict_upper : forall d n S,
+  d >= 1 ->
+  2 * 3 ^ d * n <= S ->
+  S <= 3 ^ d * (2 * n + 1) ->
+  S < 2 * 3 ^ d * (n + 1).
+.
+(* R1R0 entry number itself is odd (d>=1 case) *)
+Lemma valid_R1R0_entry_number_is_odd : forall d n,
+  d >= 1 -> n >= 0 -> is_odd (valid_R1R0_entry_number d n).
+.
+(* Intermediate Lemma: Core auxiliary lemma for simplifying branch logic *)
+Lemma R0R0_branch_simplification : forall d n dc nc,
+  d >= 1 -> n >= 1 -> dc >= 1 -> nc >= 1 -> is_odd nc ->
+  valid_R0R0_entry_number d n = valid_R0R0_entry_number dc nc ->
+  (exists d0, dc = d + d0 /\ n = nc * 2 ^ d0) \/ (dc = d /\ n = nc).
+.
+(* R0R0 Uniqueness Helper: Through canonical decomposition, any entry uniquely corresponds to odd parameters *)
+(* Every positive integer m uniquely corresponds to canonical representation of R1R0 or R0R0 branch with determined bounds *)
+Theorem build_k_steps_numeric_canonical :
+  forall m, m >= 1 ->
+   (exists d n,
+      d >= 1 /\ n >= 0 /\
+      m = valid_R1R0_entry_number d n /\
+      build_k_steps m d = repeat_R1R0 d /\
+      let S := sequence_end m (repeat_R1R0 d) in
+        (2*3 ^ d*n <= S /\ S < 2*3 ^ d*(n+1) /\ 3 ^ d - 1 <= S) /\
+        (forall d' n', d' >= 1 -> n' >= 0 ->
+          m = valid_R1R0_entry_number d' n' -> d'=d /\ n'=n)) \/
+   (exists d n,
+      d >= 1 /\ n >= 1 /\ is_odd n /\
+      m = valid_R0R0_entry_number d n /\
+      build_k_steps m d = repeat_R0 d /\
+      sequence_end m (repeat_R0 d) = n /\
+      (forall d' n', d' >= 1 -> n' >= 1 -> is_odd n' ->
+        m = valid_R0R0_entry_number d' n' -> d'=d /\ n'=n)).
+.
+============================================================
+File: collatz_part_15.v
+============================================================
+Load "collatz_part_14.v".
+(* Using canonical decomposition to derive logarithmic upper bounds for d (R1R0 branch) *)
+Lemma canonical_R1R0_d_log2_bound :
+  forall m d n,
+    m >= 1 ->
+    m = valid_R1R0_entry_number d n ->
+    d >= 1 -> n >= 0 ->
+    2 ^ d <= m + 1 /\ d <= log2 (m + 1).
+.
+(* R0R0 branch *)
+Lemma canonical_R0R0_d_log2_bound :
+  forall m d n,
+    m >= 1 ->
+    m = valid_R0R0_entry_number d n ->
+    d >= 1 -> n >= 1 ->
+    2 ^ d <= m /\ d <= log2 m.
+.
+(* Unified wrapper: For any canonical branch, d <= log2 (m+2) *)
+Lemma canonical_d_log2_global :
+  forall m d n,
+    m >= 1 ->
+    ( (m = valid_R1R0_entry_number d n /\ d >= 1 /\ n >= 0)
+    \/ (m = valid_R0R0_entry_number d n /\ d >= 1 /\ n >= 1) ) ->
+    d <= log2 (m + 2).
+.
+============================================================
+File: collatz_part_16.v
+============================================================
+Load "collatz_part_14.v".
+(* Canonical pattern transformation theorem: odd numbers leading R1R0 sequence must be followed by R0 *)
+Theorem odd_leads_R1R0_then_R0_pattern : forall m d n,
+  m >= 1 -> d >= 1 -> n >= 0 -> m = valid_R1R0_entry_number d n ->
+  exists Send,
+    sequence_end m (repeat_R1R0 d) = Send /\
+    is_even Send /\
+    (2 * 3 ^ d * n <= Send /\ Send < 2 * 3 ^ d * (n + 1) /\ 3 ^ d - 1 <= Send) /\
+    build_k_steps m (S d) = repeat_R1R0 d ++ [R0] /\
+    (forall d' n', d' >= 1 -> n' >= 0 -> m = valid_R1R0_entry_number d' n' -> d' = d /\ n' = n).
+.
+(* Canonical pattern transformation theorem: even numbers leading R0 sequence must be followed by R1R0 *)
+Theorem even_leads_R0_then_R1R0_pattern : forall m d n,
+  m >= 1 -> d >= 1 -> n >= 1 -> is_odd n -> m = valid_R0R0_entry_number d n ->
+  exists Send,
+    sequence_end m (repeat_R0 d) = Send /\
+    is_odd Send /\
+    Send = n /\
+    build_k_steps m (S d) = repeat_R0 d ++ [R1; R0] /\
+    (forall d' n', d' >= 1 -> n' >= 1 -> is_odd n' -> m = valid_R0R0_entry_number d' n' -> d' = d /\ n' = n).
+.
+(* Simplified entry predicates that directly include m >= 1 to avoid redundant derivation in subsequent proofs R1R0*)
+Definition R1R0_entry (m d n : nat) : Prop := m >= 1 /\ d >= 1 /\ n >= 0 /\ m = valid_R1R0_entry_number d n.
+(* Simplified entry predicates that directly include m >= 1 to avoid redundant derivation in subsequent proofs R0*)
+Definition R0R0_entry (m d n : nat) : Prop := m >= 1 /\ d >= 1 /\ n >= 1 /\ is_odd n /\ m = valid_R0R0_entry_number d n.
+(* R1R0 entry -> next entry (R0R0) construction *)
+Lemma next_entry_from_R1R0 : forall m d n,
+  R1R0_entry m d n ->
+  exists Send d' n',
+    sequence_end m (repeat_R1R0 d) = Send /\
+    is_even Send /\
+    R0R0_entry Send d' n' /\
+    build_k_steps m (S d) = repeat_R1R0 d ++ [R0].
+.
+(* R0R0 entry -> next entry (R1R0) construction *)
+Lemma next_entry_from_R0R0 : forall m d n,
+  R0R0_entry m d n ->
+  exists Send d' n',
+    sequence_end m (repeat_R0 d) = Send /\
+    is_odd Send /\
+    R1R0_entry Send d' n' /\
+    build_k_steps m (S d) = repeat_R0 d ++ [R1; R0].
+.
+============================================================
+File: collatz_part_16_1.v
+============================================================
+Load "collatz_part_16.v".
+(* Collatz Pattern Cycle Deterministic: Proves that for any starting value m ≥ 1 the Collatz sequence follows a deterministic cycle pattern between R1R0 and R0R0 entries *)
+Theorem collatz_pattern_cycle_deterministic : forall m,
+  m >= 1 ->
+  (exists d n Send d' n',
+      d >= 1 /\ n >= 0 /\ m = valid_R1R0_entry_number d n /\
+      sequence_end m (repeat_R1R0 d) = Send /\
+      is_even Send /\
+      build_k_steps m d = repeat_R1R0 d /\
+      build_k_steps m (S d) = repeat_R1R0 d ++ [R0] /\
+      d' >= 1 /\ n' >= 1 /\ is_odd n' /\
+      Send = valid_R0R0_entry_number d' n' /\
+      sequence_end Send (repeat_R0 d') = n' /\
+      build_k_steps Send d' = repeat_R0 d' /\
+      build_k_steps Send (S d') = repeat_R0 d' ++ [R1; R0] /\
+      (forall d0 n0, d0 >= 1 -> n0 >= 0 -> m = valid_R1R0_entry_number d0 n0 -> d0 = d /\ n0 = n) /\
+      (forall d0 n0, d0 >= 1 -> n0 >= 1 -> is_odd n0 -> Send = valid_R0R0_entry_number d0 n0 -> d0 = d' /\ n0 = n')) \/
+  (exists d n Send d' n' NextEven,
+    d >= 1 /\ n >= 1 /\ is_odd n /\ m = valid_R0R0_entry_number d n /\
+    sequence_end m (repeat_R0 d) = Send /\
+    is_odd Send /\
+    build_k_steps m d = repeat_R0 d /\
+    build_k_steps m (S d) = repeat_R0 d ++ [R1; R0] /\
+    d' >= 1 /\ n' >= 0 /\ Send = valid_R1R0_entry_number d' n' /\
+    sequence_end Send (repeat_R1R0 d') = NextEven /\ is_even NextEven /\
+    build_k_steps Send d' = repeat_R1R0 d' /\
+    build_k_steps Send (S d') = repeat_R1R0 d' ++ [R0] /\
+    (forall d0 n0, d0 >= 1 -> n0 >= 1 -> is_odd n0 -> m = valid_R0R0_entry_number d0 n0 -> d0 = d /\ n0 = n) /\
+    (forall d0 n0, d0 >= 1 -> n0 >= 0 -> Send = valid_R1R0_entry_number d0 n0 -> d0 = d' /\ n0 = n')).
+.
+(* Collatz cycle branch theorem *)
+Theorem collatz_cycle : forall m d n,
+  (R1R0_entry m d n) \/ (R0R0_entry m d n) ->
+  (exists Send d' n',
+      sequence_end m (repeat_R1R0 d) = Send /\
+      is_even Send /\
+      R0R0_entry Send d' n' /\
+      build_k_steps m (S d) = repeat_R1R0 d ++ [R0]) \/
+  (exists Send d' n',
+      sequence_end m (repeat_R0 d) = Send /\
+      is_odd Send /\
+      R1R0_entry Send d' n' /\
+      build_k_steps m (S d) = repeat_R0 d ++ [R1; R0]).
+.
+============================================================
+File: collatz_part_17.v
+============================================================
+Load "collatz_part_16.v".
+(* Canonical chain definition R1R0-entry or R0R0-entry patterns *) 
+Definition canonical_chain (entry_kind : bool) (d : nat) : list CollatzOp :=
+  if entry_kind then repeat_R1R0 d ++ [R0] else repeat_R0 d ++ [R1; R0].
+(* Sum contributions R1R0-entry adds 1 R0R0-entry adds d *)
+Fixpoint sum_contributions (chains : list (bool * nat)) : nat :=
+  match chains with
+  | nil => 0
+  | (b, d) :: rest =>
+      let contribution := if b then 1 else d in
+      contribution + sum_contributions rest
+  end.
+(*Convert chain list to operation sequence *)
+Fixpoint chains_to_sequence (chains : list (bool * nat)) : list CollatzOp :=
+  match chains with
+  | nil => nil
+  | (b, d) :: rest =>
+      canonical_chain b d ++ chains_to_sequence rest
+  end.
+(* Length facts for the two patterns *)
+Lemma length_repeat_R1R0 : forall d, length (repeat_R1R0 d) = 2 * d.
+.
+(* Count R1 operations in repeat_R1R0 d ++ [R0] pattern *)
+Lemma count_R1_repeat_R1R0_plus_R0 : forall d,
+  d >= 0 ->
+  snd (count_operations (repeat_R1R0 d ++ [R0])) = d.
+.
+(* Helper lemma: Count R0 and R1 operations in repeat_R0 d ++ [R1; R0] *)
+Lemma count_R0_repeat_R0_plus_R1R0 : forall d,
+  d >= 0 ->
+  fst (count_operations (repeat_R0 d ++ [R1; R0])) = d + 1.
+.
+(* Helper lemma: Count R0 and R1 operations in repeat_R1R0 d ++ [R0] *)
+Lemma count_R0_repeat_R1R0_plus_R0 : forall d,
+  d >= 0 ->
+  fst (count_operations (repeat_R1R0 d ++ [R0])) = d + 1.
+.
+(* Helper lemma: Count R1 operations in repeat_R0 d ++ [R1; R0] *)
+Lemma count_R1_repeat_R0_plus_R1R0 : forall d,
+  d >= 0 ->
+  snd (count_operations (repeat_R0 d ++ [R1; R0])) = 1.
+.
+(* Exact counts for a canonical chain *)
+Lemma count_operations_canonical_chain : forall b d,
+  d >= 1 ->
+  count_operations (canonical_chain b d) =
+  (if b then (d + 1, d) else (d + 1, 1)).
+.
+(* R0 advantage theorem: R0 operations always outnumber R1 operations *)
+Theorem canonical_chain_R0_advantage : forall b d,
+  d >= 1 ->
+  let '(r0s, r1s) := count_operations (canonical_chain b d) in
+  r0s > r1s /\ r0s - r1s = (if b then 1 else d).
+.
+(* Count properties of repeat_R1R0 *)
+Lemma count_repeat_R1R0 : forall d, count_operations (repeat_R1R0 d) = (d, d).
+.
+(* Count properties of repeat_R0 *)
+Lemma count_repeat_R0 : forall d, count_operations (repeat_R0 d) = (d, 0).
+.
+(* Count operations for concatenated sequences: additive property *)
+Lemma count_operations_app : forall (ops1 ops2 : list CollatzOp),
+  count_operations (ops1 ++ ops2) =
+    let '(r0s1, r1s1) := count_operations ops1 in
+    let '(r0s2, r1s2) := count_operations ops2 in
+    (r0s1 + r0s2, r1s1 + r1s2).
+.
+(* Helper lemma: chain list count equals sum of individual chain counts *)
+Lemma count_operations_chains_sequence : forall chains,
+  fst (count_operations (chains_to_sequence chains)) =
+  sum_contributions chains + snd (count_operations (chains_to_sequence chains)).
+.
+(* Generalized theorem: R0 advantage of concatenated canonical chains *)
+Theorem generalized_concatenated_chains_R0_advantage :
+  forall (chains : list (bool * nat)),
+  chains <> nil ->
+  (forall bd, In bd chains -> let (b, d) := bd in d >= 1) ->
+  fst (count_operations (chains_to_sequence chains)) > snd (count_operations (chains_to_sequence chains)) /\
+  fst (count_operations (chains_to_sequence chains)) - snd (count_operations (chains_to_sequence chains)) = sum_contributions chains.
+.
+(* Extract simple chains from full chain information: keep only (b,d) pairs *)
+Definition extract_simple_chains (chains : list (bool * nat * nat * nat * nat)) : list (bool * nat) :=
+  map (fun '(b, d, _, _, _) => (b, d)) chains.
+(* Non-empty chains: simple chains non-empty iff original chains non-empty *)
+Lemma extract_simple_chains_nonempty : forall chains,
+  chains <> nil <-> extract_simple_chains chains <> nil.
+.
+(* Valid chains: d >= 1 preserved in simple chain extraction *)
+Lemma extract_simple_chains_valid : forall chains,
+  (forall bdnds, In bdnds chains ->
+    let '(b, d, n, m, Send) := bdnds in d >= 1) ->
+  forall bd, In bd (extract_simple_chains chains) ->
+    let (b, d) := bd in d >= 1.
+.
+(* Canonical chains to sequence: equivalence between two representations *)
+Lemma canonical_chains_to_sequence : forall chains,
+  concat (map (fun '(b, d, _, _, _) => canonical_chain b d) chains) =
+  chains_to_sequence (extract_simple_chains chains).
+.
+(* Generalized R0 advantage theorem: valid chain sequences maintain R0 advantage *)
+Theorem generalized_valid_chains_sequence_R0_advantage :
+  forall (chains : list (bool * nat * nat * nat * nat)),
+  chains <> nil ->
+  (forall bdnds, In bdnds chains ->
+    let '(b, d, n, m, Send) := bdnds in
+    d >= 1 /\
+    ((b = true /\ n >= 0 /\ m = valid_R1R0_entry_number d n) \/
+     (b = false /\ n >= 1 /\ is_odd n /\ m = valid_R0R0_entry_number d n)) /\
+    ((b = true /\
+      sequence_end m (repeat_R1R0 d) = Send /\ is_even Send) \/
+     (b = false /\
+      sequence_end m (repeat_R0 d) = Send /\ is_odd Send))) ->
+  (let total_seq := concat (map (fun '(b, d, _, _, _) => canonical_chain b d) chains) in
+   fst (count_operations total_seq) > snd (count_operations total_seq) /\
+   fst (count_operations total_seq) - snd (count_operations total_seq) =
+   sum_contributions (extract_simple_chains chains)).
+.
+(* Valid chain sequence condition: defines valid R1R0-entry or R0R0-entry chains *)
+Definition valid_chain_sequence_condition (b : bool) (d : nat) (n : nat) (m : nat) (Send : nat) : Prop :=
+  d >= 1 /\
+  ((b = true /\ n >= 0 /\ m = valid_R1R0_entry_number d n /\
+    sequence_end m (repeat_R1R0 d) = Send /\ is_even Send) \/
+   (b = false /\ n >= 1 /\ is_odd n /\ m = valid_R0R0_entry_number d n /\
+    sequence_end m (repeat_R0 d) = Send /\ is_odd Send)).
+(* Corollary: R0 advantage for valid chain sequences using condition definition *)
+Corollary valid_chains_sequence_R0_advantage_corollary :
+  forall (chains : list (bool * nat * nat * nat * nat)),
+  chains <> nil ->
+  (forall bdnds, In bdnds chains ->
+    let '(b, d, n, m, Send) := bdnds in
+    valid_chain_sequence_condition b d n m Send) ->
+  (let total_seq := concat (map (fun '(b, d, _, _, _) => canonical_chain b d) chains) in
+   let simple_chains := extract_simple_chains chains in
+   fst (count_operations total_seq) > snd (count_operations total_seq) /\
+   fst (count_operations total_seq) - snd (count_operations total_seq) =
+   sum_contributions simple_chains).
+.
+============================================================
+File: collatz_part_18.v
+============================================================
+Load "collatz_part_17.v".
+(* Valid chains condition non-empty list with valid chain sequence conditions *)
+Definition valid_chains_condition
+  (chains : list (bool * nat * nat * nat * nat)) : Prop :=
+  chains <> nil /\
+  (forall bdnds, In bdnds chains ->
+    let '(b, d, n, m, Send) := bdnds in
+    valid_chain_sequence_condition b d n m Send).
+(* Chains R0 advantage R0 operations exceed R1 operations with specific difference *)
+Definition chains_R0_advantage
+  (chains : list (bool * nat * nat * nat * nat)) : Prop :=
+  let total_seq := concat (map (fun '(b, d, _, _, _) => canonical_chain b d) chains) in
+  let simple_chains := extract_simple_chains chains in
+  fst (count_operations total_seq) > snd (count_operations total_seq) /\
+  fst (count_operations total_seq) - snd (count_operations total_seq) =
+    sum_contributions simple_chains.
+(* Universal R0 advantage bounds precise counts for canonical chains *)
+Corollary universal_R0_advantage_bounds :
+  forall b d, d >= 1 ->
+  let '(r0s, r1s) := count_operations (canonical_chain b d) in
+  match b with
+  | true => r0s = d + 1 /\ r1s = d /\ r0s = r1s + 1 /\ r0s <= 2 * r1s
+  | false => r0s = d + 1 /\ r1s = 1 /\ r0s = (d + 1) * r1s /\ r0s >= 2 * r1s
+  end.
+.
+(* Valid sequence concatenation combining two valid sequences *)
+Lemma valid_sequence_app :
+  forall (n : nat) (ops1 ops2 : list CollatzOp),
+    valid_sequence ops1 n ->
+    valid_sequence ops2 (sequence_end n ops1) ->
+    valid_sequence (ops1 ++ ops2) n.
+.
+(* Logarithm of product with power of 2 log2q * 2^d = log2q + d *)
+Lemma log2_mul_pow2 :
+  forall (q d : nat),
+    q > 0 ->
+    log2 (q * 2 ^ d) = log2 q + d.
+.
+(* Log2 bound for R1R0 entry depth d <= log2m + 1 *)
+Lemma R1R0_entry_d_log2_bound :
+  forall m d n,
+    m >= 1 ->
+    m = valid_R1R0_entry_number d n ->
+    d >= 1 ->
+    n >= 0 ->
+    d <= log2 (m + 1).
+.
+(* Extract simple chains concatenation distributes over list append *)
+Lemma extract_simple_chains_app :
+  forall chains1 chains2,
+    extract_simple_chains (chains1 ++ chains2) =
+    extract_simple_chains chains1 ++ extract_simple_chains chains2.
+.
+(* Sum contributions concatenation additive over list append *)
+Lemma sum_contributions_app :
+  forall chains1 chains2,
+    sum_contributions (chains1 ++ chains2) =
+    sum_contributions chains1 + sum_contributions chains2.
+.
+(* Chains R0 advantage concatenation preserved under list append *)
+Lemma chains_R0_advantage_app :
+  forall chains1 chains2,
+    chains_R0_advantage chains1 ->
+    chains_R0_advantage chains2 ->
+    chains_R0_advantage (chains1 ++ chains2).
+.
+============================================================
+File: collatz_part_18_1.v
+============================================================
+Load "collatz_part_18.v".
+(* Load "collatz_part_16_2.v".*)
+(*  定理R1R0到R0R0的闭包  *)
+Theorem R1R0_to_R0R0_closure :
+  forall (d : nat) (n : nat),
+  d >= 1 -> n >= 0 ->
+  let m := valid_R1R0_entry_number d n in
+  let Send := sequence_end m (repeat_R1R0 d) in
+  is_even Send ->
+  exists (d' : nat) (n' : nat),
+    d' >= 1 /\ is_odd n' /\ n' >= 1 /\
+    Send = valid_R0R0_entry_number d' n' /\
+    sequence_end (valid_R0R0_entry_number d' n') (repeat_R0 d') = n'.
+.
+(*  R0到R1R0的闭包  *)
+Theorem R0R0_to_R1R0_reverse : forall (d' : nat) (n' : nat),
+  d' >= 1 -> is_odd n' -> n' >= 1 ->
+  exists (d : nat) (n : nat),
+    d >= 1 /\ n >= 0 /\
+    n' = valid_R1R0_entry_number d n /\
+    is_odd (valid_R1R0_entry_number d n).
+.
+(*  从 R1R0 分支出发，经过 R0R0 分支，再回到 R1R0 分支*)
+Theorem R1R0_full_cycle_step :
+  forall (d : nat) (n : nat),
+  d >= 1 -> n >= 0 ->
+  let m := valid_R1R0_entry_number d n in
+  let Send := sequence_end m (repeat_R1R0 d) in
+  is_even Send ->
+  exists (d' d'' : nat) (n' n'' : nat),
+    d' >= 1 /\ is_odd n' /\ n' >= 1 /\
+    Send = valid_R0R0_entry_number d' n' /\
+    sequence_end Send (repeat_R0 d') = n' /\
+    d'' >= 1 /\ n'' >= 0 /\
+    n' = valid_R1R0_entry_number d'' n'' /\
+    is_odd (valid_R1R0_entry_number d'' n'').
+.
+(* R0R0 分支也有对称的完整循环步骤 *)
+Theorem R0R0_full_cycle_step :
+  forall (d : nat) (n : nat),
+  d >= 1 -> n >= 1 -> is_odd n ->
+  let m := valid_R0R0_entry_number d n in
+  let Send := sequence_end m (repeat_R0 d) in
+  (* Send = n，是奇数 *)
+  exists (d' d'' : nat) (n' n'' : nat),
+    (* 第一步：R0R0 链执行后进入 R1R0 分支 *)
+    d' >= 1 /\ n' >= 0 /\
+    Send = valid_R1R0_entry_number d' n' /\
+    is_odd (valid_R1R0_entry_number d' n') /\
+    (* 第二步：R1R0 链执行后 Send' 是偶数，可回到 R0R0 分支 *)
+    d'' >= 1 /\ is_odd n'' /\ n'' >= 1 /\
+    sequence_end (valid_R1R0_entry_number d' n') (repeat_R1R0 d') =
+      valid_R0R0_entry_number d'' n''.
+.
+(*  循环状态与迭代关系  *)
+Record cycle_state := {
+  cs_branch : bool;
+  cs_d : nat;
+  cs_n : nat
+}.
+(*  构造循环状态  *)
+Definition mk_cycle_state (b : bool) (d n : nat) : cycle_state :=
+  {| cs_branch := b; cs_d := d; cs_n := n |}.
+(*  循环状态的有效性  *)
+Definition valid_cycle_state (s : cycle_state) : Prop :=
+  match cs_branch s with
+  | true =>
+      cs_d s >= 1 /\
+      cs_n s >= 0 /\
+      is_even
+        (sequence_end (valid_R1R0_entry_number (cs_d s) (cs_n s))
+                      (repeat_R1R0 (cs_d s)))
+  | false =>
+      cs_d s >= 1 /\
+      cs_n s >= 1 /\
+      is_odd (cs_n s)
+  end.
+(*  循环步骤关系  *)
+Inductive cycle_step : cycle_state -> cycle_state -> Prop :=
+| cycle_step_from_R1R0 :
+    forall d n d' d'' n' n'',
+      d >= 1 ->
+      n >= 0 ->
+      let m := valid_R1R0_entry_number d n in
+      let Send := sequence_end m (repeat_R1R0 d) in
+      is_even Send ->
+      d' >= 1 ->
+      is_odd n' ->
+      n' >= 1 ->
+      Send = valid_R0R0_entry_number d' n' ->
+      sequence_end Send (repeat_R0 d') = n' ->
+      d'' >= 1 ->
+      n'' >= 0 ->
+      n' = valid_R1R0_entry_number d'' n'' ->
+      is_odd (valid_R1R0_entry_number d'' n'') ->
+      cycle_step (mk_cycle_state true d n) (mk_cycle_state true d'' n'')
+| cycle_step_from_R0R0 :
+    forall d n d' d'' n' n'',
+      d >= 1 ->
+      n >= 1 ->
+      is_odd n ->
+      let m := valid_R0R0_entry_number d n in
+      let Send := sequence_end m (repeat_R0 d) in
+      d' >= 1 ->
+      n' >= 0 ->
+      Send = valid_R1R0_entry_number d' n' ->
+      is_odd (valid_R1R0_entry_number d' n') ->
+      is_even (sequence_end (valid_R1R0_entry_number d' n') (repeat_R1R0 d')) ->
+      d'' >= 1 ->
+      is_odd n'' ->
+      n'' >= 1 ->
+      sequence_end (valid_R1R0_entry_number d' n') (repeat_R1R0 d') =
+        valid_R0R0_entry_number d'' n'' ->
+      cycle_step (mk_cycle_state false d n) (mk_cycle_state false d'' n'').
+(*  循环步骤的多步关系  *)
+Inductive cycle_steps : nat -> cycle_state -> cycle_state -> Prop :=
+| cycle_steps_zero :
+    forall s, cycle_steps 0 s s
+| cycle_steps_succ :
+    forall k s1 s2 s3,
+      cycle_step s1 s2 ->
+      cycle_steps k s2 s3 ->
+      cycle_steps (S k) s1 s3.
+(*  循环步骤的度量  *)
+Definition cycle_measure (s : cycle_state) : nat :=
+  match cs_branch s with
+  | true =>
+      sequence_end (valid_R1R0_entry_number (cs_d s) (cs_n s))
+                   (repeat_R1R0 (cs_d s))
+  | false =>
+      valid_R0R0_entry_number (cs_d s) (cs_n s)
+  end.
+(*  循环步骤的收敛性  *)
+Theorem cycle_steps_convergence_R1R0 :
+  forall (d : nat) (n : nat),
+    d >= 1 ->
+    n >= 0 ->
+    valid_cycle_state (mk_cycle_state true d n) ->
+    exists (k : nat) (s_final : cycle_state),
+      cycle_steps k (mk_cycle_state true d n) s_final /\
+      cs_branch s_final = true.
+.
+(*  R0R0 分支收敛性定理  *)
+Theorem cycle_steps_convergence_R0R0 :
+  forall (d : nat) (n : nat),
+    d >= 1 ->
+    n >= 1 ->
+    valid_cycle_state (mk_cycle_state false d n) ->
+    exists (k : nat) (s_final : cycle_state),
+      cycle_steps k (mk_cycle_state false d n) s_final /\
+      cs_branch s_final = false.
+.
+(*  循环状态可达性定理  *)
+Theorem cycle_state_reachability :
+  forall (s : cycle_state),
+    valid_cycle_state s ->
+    exists (k : nat) (s_final : cycle_state),
+      cycle_steps k s s_final /\
+      cs_branch s_final = cs_branch s.
+.
+(*  规范链的R0操作优势定理  *)
+Theorem canonical_R0_advantage :
+  forall (s : cycle_state),
+    valid_cycle_state s ->
+    let ops := canonical_chain (cs_branch s) (cs_d s) in
+    fst (count_operations ops) > snd (count_operations ops) /\
+    fst (count_operations ops) - snd (count_operations ops) =
+      (if cs_branch s then 1 else cs_d s).
+.
+(*  循环步性质封装  *)
+Lemma valid_cycle_state_cycle_step :
+  forall (s : cycle_state),
+    valid_cycle_state s ->
+    exists (s' : cycle_state),
+      cycle_step s s' /\ cs_branch s' = cs_branch s.
+.
+(* 对于任何有效的循环状态，存在一个有限步数k，使得经过k次循环步后，状态仍然保持在同一分支 *)
+Theorem chain_characterization_with_advantage :
+  (forall m, m mod 6 = 2 ->
+     exists d n, d >= 1 /\ n >= 0 /\
+     m = sequence_end (valid_R1R0_entry_number d n) (repeat_R1R0 d) /\
+     let '(r0s, r1s) := count_operations (canonical_chain true d) in
+     r0s = d + 1 /\ r1s = d /\ r0s <= 2 * r1s) /\
+  (forall m, m mod 2 = 1 ->
+     exists d n, d >= 1 /\ n >= 1 /\ is_odd n /\
+     m = sequence_end (valid_R0R0_entry_number d n) (repeat_R0 d) /\
+     let '(r0s, r1s) := count_operations (canonical_chain false d) in
+     r0s = d + 1 /\ r1s = 1 /\ r0s >= 2 * r1s).
+.
+(*  R1R0链比例公式 *)
+Theorem R1R0_chain_ratio_formula : forall d,
+  d >= 1 ->
+  let '(r0s, r1s) := count_operations (canonical_chain true d) in
+  r0s / r1s = (d + 1) / d /\
+  r0s = r1s + 1.
+.
+(*  R0链比例公式 *)
+Theorem R0_chain_ratio_formula : forall d,
+  d >= 1 ->
+  let '(r0s, r1s) := count_operations (canonical_chain false d) in
+  r0s / r1s = d + 1 /\
+  r0s = r1s * (d + 1).
+.
+(*  统一比例公式  *)
+Theorem unified_chain_ratio_formula : forall b d,
+  d >= 1 ->
+  let '(r0s, r1s) := count_operations (canonical_chain b d) in
+  match b with
+  | true => r0s = d + 1 /\ r1s = d /\ r0s = r1s + 1
+  | false => r0s = d + 1 /\ r1s = 1 /\ r0s = (d + 1) * r1s
+  end.
+.
+(*  比例优势分析  *)
+Theorem R0_advantage_ratio_analysis : forall b d,
+  d >= 1 ->
+  let '(r0s, r1s) := count_operations (canonical_chain b d) in
+  r0s > r1s /\
+  (if b then r0s <= 2 * r1s else r0s >= 2 * r1s) /\
+  r0s - r1s = (if b then 1 else d).
+.
+(*  序列组合的比例公式  *)
+Theorem total_operations_ratio_formula : forall chains,
+  chains <> nil ->
+  (forall bd, In bd chains -> let '(b, d) := bd in d >= 1) ->
+  let total_ops := chains_to_sequence chains in
+  let '(total_r0s, total_r1s) := count_operations total_ops in
+  let contributions := sum_contributions chains in
+  total_r0s = total_r1s + contributions.
+.
+(* pattern_toggle_deterministic : 确定性模式切换定理 *)
+Theorem pattern_toggle_deterministic :
+  (forall m, m mod 6 = 2 ->
+     exists d n d' n',
+       d >= 1 /\ n >= 0 /\
+       d' >= 1 /\ n' >= 1 /\ is_odd n' /\
+       m = sequence_end (valid_R1R0_entry_number d n) (repeat_R1R0 d) /\
+       valid_input m /\
+       m = valid_R0R0_entry_number d' n' /\
+       let next_m := sequence_end m (repeat_R0 d') in
+       next_m mod 2 = 1) /\
+  (forall m, m mod 2 = 1 ->
+     exists d n d' n',
+       d >= 1 /\ n >= 1 /\ is_odd n /\
+       d' >= 1 /\ n' >= 0 /\
+       m = sequence_end (valid_R0R0_entry_number d n) (repeat_R0 d) /\
+       valid_input m /\
+       m = valid_R1R0_entry_number d' n' /\
+       let next_m := sequence_end m (repeat_R1R0 d') in
+       next_m mod 6 = 2).
+.
+(* R0 advantage for the concatenated canonical chains. *)
+Theorem mod62_R0advantage :
+  forall m0,
+    m0 mod 6 = 2 ->
+    exists d0 n0 d1 n1 m1 m2,
+      let chains := [(false, d0, n0, m0, m1); (true, d1, n1, m1, m2)] in
+      valid_chains_condition chains /\
+      chains_R0_advantage chains /\
+      m2 mod 6 = 2 /\
+      sum_contributions (extract_simple_chains chains) = d0 + 1.
+.
+(* Macro-step advantage: mod6=2 numbers gain at least 2 net-R0 advantage *)
+Theorem mod62_macrostep_R0_net_advantage_ge_2 :
+  forall m0,
+    m0 mod 6 = 2 ->
+    exists d0 n0 d1 n1 m1 m2,
+      let chains := [(false, d0, n0, m0, m1); (true, d1, n1, m1, m2)] in
+      valid_chains_condition chains /\
+      chains_R0_advantage chains /\
+      m2 mod 6 = 2 /\
+      2 <= sum_contributions (extract_simple_chains chains).
+.
+(* Any valid m can reach a mod6=2 orbit *)
+Theorem direct_conversion_to_mod6_2_orbit :
+  forall m,
+    valid_input m ->
+    exists k : nat, exists m_final : nat,
+      m_final mod 6 = 2 /\
+      exists ops : list CollatzOp,
+        length ops = k /\
+        valid_sequence ops m /\
+        sequence_end m ops = m_final /\
+        k <= 2 * (log2 m + 1).
+.
+(* 迭代宏步展开的下界 *)
+Theorem mod62_macrostep_iterated_lower_bound :
+  forall t m0, t >= 1 -> m0 mod 6 = 2 ->
+    exists mt chains, length chains = 2 * t /\
+      valid_chains_condition chains /\
+      mt mod 6 = 2 /\
+      2 * t <= sum_contributions (extract_simple_chains chains) /\
+      chains_R0_advantage chains.
+.
+(* a combination of the two previous theorems. *)
+Theorem global_mod62_advantage_growth :
+  forall m t,
+    valid_input m ->
+    t >= 1 ->
+    exists (k : nat) (m2 mt : nat)
+           (ops : list CollatzOp)
+           (chains : list (bool * nat * nat * nat * nat)),
+      (* conversion stage *)
+      m2 mod 6 = 2 /\
+      length ops = k /\
+      valid_sequence ops m /\
+      sequence_end m ops = m2 /\
+      k <= 2 * (log2 m + 1) /\
+      (* macrostep stage *)
+      length chains = 2 * t /\
+      valid_chains_condition chains /\
+      mt mod 6 = 2 /\
+      2 * t <= sum_contributions (extract_simple_chains chains) /\
+      chains_R0_advantage chains.
+.
+(* r0 优势随序列长度增长定理 *)
+Theorem R0_advantage_growth :
+  forall m t,
+  valid_input m -> t >= 1 ->
+  exists (r0_total r1_total : nat) (k : nat) (m2 mt : nat)
+         (ops : list CollatzOp)
+         (chains : list (bool * nat * nat * nat * nat)),
+    (* 从global_mod6_orbit_advantage_growth获取chains *)
+    m2 mod 6 = 2 /\
+    length ops = k /\
+    valid_sequence ops m /\
+    sequence_end m ops = m2 /\
+    k <= 2 * (log2 m + 1) /\
+    length chains = 2 * t /\
+    valid_chains_condition chains /\
+    mt mod 6 = 2 /\
+    2 * t <= sum_contributions (extract_simple_chains chains) /\
+    chains_R0_advantage chains /\
+    (* 定义总序列和操作计数 *)
+    let total_seq := concat (map (fun '(b, d, _, _, _) => canonical_chain b d) chains) in
+    count_operations total_seq = (r0_total, r1_total) /\
+    (* 比例保证 *)
+    r0_total > r1_total /\
+    r0_total - r1_total >= 2 * t.
+.
+(* R0优势下界定理 *)
+Theorem R0_advantage_lower_bound :
+  forall m t,
+  valid_input m -> t >= 1 ->
+  exists (r0_total r1_total : nat) (k : nat) (m2 mt : nat)
+         (ops : list CollatzOp)
+         (chains : list (bool * nat * nat * nat * nat)),
+    (* 保持原有条件 *)
+    m2 mod 6 = 2 /\
+    length ops = k /\
+    valid_sequence ops m /\
+    sequence_end m ops = m2 /\
+    k <= 2 * (log2 m + 1) /\
+    length chains = 2 * t /\
+    valid_chains_condition chains /\
+    mt mod 6 = 2 /\
+    2 * t <= sum_contributions (extract_simple_chains chains) /\
+    chains_R0_advantage chains /\
+    let total_seq := concat (map (fun '(b, d, _, _, _) => canonical_chain b d) chains) in
+    count_operations total_seq = (r0_total, r1_total) /\
+    (* 新的不等式形式 *)
+    r0_total >= 2 * t + r1_total.
+.
+============================================================
+File: collatz_part_19.v
+============================================================
+Load "collatz_part_18.v".
+(* build_k_steps decomposition: k1 steps followed by k2 steps equals building from intermediate state *)
+Lemma build_k_steps_add : forall n k1 k2,
+  build_k_steps n (k1 + k2) =
+    build_k_steps n k1 ++
+    build_k_steps (sequence_end n (build_k_steps n k1)) k2.
+.
+(* Canonical conversion to mod6=2 orbit using build_k_steps as canonical prefix *)
+Theorem direct_conversion_to_mod6_2_orbit_canonical :
+  forall m,
+    valid_input m ->
+    exists (K k : nat) (m_final : nat) (ops : list CollatzOp),
+      ops = build_k_steps m K /\
+      length ops = k /\
+      valid_sequence ops m /\
+      sequence_end m ops = m_final /\
+      m_final mod 6 = 2 /\
+      k <= 2 * (log2 m + 1).
+.
+(* Canonical R0 advantage for mod6=2 numbers: two-step chain with positive contribution *)
+Theorem mod62_R0advantage_canonical :
+  forall m0,
+    m0 mod 6 = 2 ->
+    exists d0 n0 d1 n1 m1 m2,
+      d0 >= 1 /\
+      n0 >= 1 /\
+      is_odd n0 /\
+      m0 = valid_R0R0_entry_number d0 n0 /\
+      build_k_steps m0 d0 = repeat_R0 d0 /\
+      m1 = sequence_end m0 (repeat_R0 d0) /\
+      m1 = n0 /\
+      d1 >= 1 /\
+      n1 >= 0 /\
+      m1 = valid_R1R0_entry_number d1 n1 /\
+      build_k_steps m1 d1 = repeat_R1R0 d1 /\
+      m2 = sequence_end m1 (repeat_R1R0 d1) /\
+      let chains := [(false, d0, n0, m0, m1); (true, d1, n1, m1, m2)] in
+      valid_chains_condition chains /\
+      chains_R0_advantage chains /\
+      m2 mod 6 = 2 /\
+      sum_contributions (extract_simple_chains chains) = d0 + 1.
+.
+(* Factor2 decomposition function definitions *)
+(* Extract 2-factors from n with bounded iterations *)
+Fixpoint factor2_bounded (k n : nat) : nat * nat :=
+  match k with
+  | 0 => (0, n)
+  | S k' =>
+      if Nat.even n then
+        let '(d, q) := factor2_bounded k' (n / 2) in
+        (S d, q)
+      else (0, n)
+  end.
+(* Extract 2-factors from n (full decomposition) *)
+Definition factor2 (n : nat) : nat * nat := factor2_bounded n n.
+(* Exponent of 2 in n's prime factorization *)
+Definition factor2_exp (n : nat) : nat := fst (factor2 n).
+(* Odd part of n after removing all factors of 2 *)
+Definition factor2_odd (n : nat) : nat := snd (factor2 n).
+(* ------------------------------------------------------------------ *)
+(* Basic properties of factor2 decomposition functions *)
+(* factor2_bounded decomposition: n = q * 2^d *)
+Lemma factor2_bounded_decomp : forall k n d q,
+  factor2_bounded k n = (d, q) ->
+  n = q * 2 ^ d.
+.
+(* factor2_bounded preserves oddness of the quotient *)
+Lemma factor2_bounded_odd : forall k n,
+  n >= 1 -> k >= n -> is_odd (snd (factor2_bounded k n)).
+.
+(* factor2 decomposition: n = odd_part * 2^exponent *)
+Lemma factor2_spec_decomp : forall n,
+  n = factor2_odd n * 2 ^ (factor2_exp n).
+.
+(* factor2 odd part is always odd for n >= 1 *)
+Lemma factor2_spec_odd : forall n,
+  n >= 1 -> is_odd (factor2_odd n).
+.
+(* Canonical macro-step for mod6=2 *)
+Definition canonical_mod62_macrostep_chains (m0 : nat)
+  : list (bool * nat * nat * nat * nat) :=
+  let '(d0, n0) := factor2 m0 in
+  let m1 := n0 in
+  let '(d1, q1) := factor2 (m1 + 1) in
+  let n1 := q1 / 2 in
+  let m2 := sequence_end m1 (repeat_R1R0 d1) in
+  [(false, d0, n0, m0, m1); (true, d1, n1, m1, m2)].
+(* End state after canonical macro-step for mod6=2 *)
+Definition canonical_mod62_macrostep_end (m0 : nat) : nat :=
+  let '(d0, n0) := factor2 m0 in
+  let m1 := n0 in
+  let '(d1, _) := factor2 (m1 + 1) in
+  sequence_end m1 (repeat_R1R0 d1).
+(* Iterated canonical macro-steps for mod6=2: concatenate chains from t steps *)
+Fixpoint canonical_mod62_iterated_chains (t : nat) (m0 : nat)
+  : list (bool * nat * nat * nat * nat) :=
+  match t with
+  | 0 => []
+  | S t' =>
+      let chains1 := canonical_mod62_macrostep_chains m0 in
+      let m2 := canonical_mod62_macrostep_end m0 in
+      chains1 ++ canonical_mod62_iterated_chains t' m2
+  end.
+(* Final state after t iterated canonical macro-steps for mod6=2 *)
+Fixpoint canonical_mod62_iterated_end (t : nat) (m0 : nat) : nat :=
+  match t with
+  | 0 => m0
+  | S t' => canonical_mod62_iterated_end t' (canonical_mod62_macrostep_end m0)
+  end.
+(* Canonical macro-step preserves mod6=2 and has positive contribution *)
+Lemma canonical_mod62_macrostep_spec :
+  forall m0,
+    m0 mod 6 = 2 ->
+    let chains := canonical_mod62_macrostep_chains m0 in
+    let m2 := canonical_mod62_macrostep_end m0 in
+      length chains = 2 /\
+      valid_chains_condition chains /\
+      m2 mod 6 = 2 /\
+      2 <= sum_contributions (extract_simple_chains chains).
+.
+(* Iterated canonical macro-steps for mod6=2: lower bound on total contributions *)
+Theorem mod62_macrostep_iterated_lower_bound_canonical :
+  forall t m0,
+    t >= 1 ->
+    m0 mod 6 = 2 ->
+    let chains := canonical_mod62_iterated_chains t m0 in
+    let mt := canonical_mod62_iterated_end t m0 in
+      length chains = 2 * t /\
+      valid_chains_condition chains /\
+      mt mod 6 = 2 /\
+      2 * t <= sum_contributions (extract_simple_chains chains) /\
+      chains_R0_advantage chains.
+.
+(* Global advantage growth for mod6=2: linear growth of contributions *)
+Theorem global_mod62_advantage_growth_canonical :
+  forall m t,
+    valid_input m ->
+    t >= 1 ->
+    exists (K k : nat) (m2 mt : nat)
+           (ops : list CollatzOp)
+           (chains : list (bool * nat * nat * nat * nat)),
+      ops = build_k_steps m K /\
+      length ops = k /\
+      valid_sequence ops m /\
+      sequence_end m ops = m2 /\
+      k <= 2 * (log2 m + 1) /\
+      m2 mod 6 = 2 /\
+      chains = canonical_mod62_iterated_chains t m2 /\
+      mt = canonical_mod62_iterated_end t m2 /\
+      length chains = 2 * t /\
+      valid_chains_condition chains /\
+      mt mod 6 = 2 /\
+      2 * t <= sum_contributions (extract_simple_chains chains) /\
+      chains_R0_advantage chains.
+.

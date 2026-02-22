@@ -1,0 +1,36 @@
+================================================================================
+Major Theorem Dependency Report
+================================================================================
+Target theorem: log2_upper_bound
+File position: line 5
+
+Statistics:
+  - Total dependent theorems: 4
+  - Maximum dependency depth: 4
+
+Bracket notation:
+  - █name█ : Theorem-like (Theorem/Proposition/Corollary/Fact)
+  - ░name░ : Lemma
+  - [name] : Other (Definition/Fixpoint/Inductive/Axiom/...)
+
+Dependency levels:
+Level 0 (1 theorems):
+  - ░log2_upper_bound░                    log2_p.v,31,44
+
+Level 1 (1 theorems):
+  - [log2_spec]                    log2_p.v,20,20
+
+Level 2 (1 theorems):
+  - [log2_nonpos]                    log2_p.v,21,30
+
+Level 3 (1 theorems):
+  - [log2]                    log2_p.v,15,19
+
+Level 4 (1 theorems):
+  - [Inline]                    log2_p.v,15,19
+
+Dependency tree:
+└── [log2_spec]
+    └── [log2_nonpos]
+        └── [log2]
+            └── [Inline]

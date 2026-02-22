@@ -1,0 +1,221 @@
+﻿Parameter,Inline,,log2_p.v,15,19
+Parameter,log2,,log2_p.v,15,19
+Axiom,log2_spec,,log2_p.v,20,20
+Axiom,log2_nonpos,,log2_p.v,21,30
+Lemma,log2_upper_bound,,log2_p.v,31,44
+Lemma,log2_spec_high,Basic properties of log2,log2_p.v,54,61
+Lemma,log2_lower_bound,Basic properties of log2,log2_p.v,64,83
+Lemma,log2_monotone,Basic properties of logarithm,log2_p.v,90,95
+Lemma,log2_mult_power2,,log2_p.v,97,117
+Lemma,log2_power2,,log2_p.v,119,133
+Lemma,log2_approx_linear,Linear approximation property of logarithm (weaker form， used for subsequent estimation),log2_p.v,138,146
+Lemma,log2_lower_bound_strong,Lower bound estimation of logarithm,log2_p.v,151,157
+Inductive,CollatzOp,Define Collatz operations Documentation uses Coq 8.10.2 version,collatz_part_1.v,15,19
+Definition,valid_input,Define the property of valid input,collatz_part_1.v,20,22
+Definition,is_even,Helper definition: convert bool to Prop,collatz_part_1.v,23,23
+Definition,is_odd,,collatz_part_1.v,24,26
+Definition,collatz_step,Define single-step Collatz operation,collatz_part_1.v,27,31
+Definition,valid_R0R1_entry_number,Entry function definition,collatz_part_1.v,32,35
+Definition,valid_R0R0_entry_number,Define entry function,collatz_part_1.v,36,39
+Definition,valid_R1R0_entry_number,R1R0 entry function definition,collatz_part_1.v,40,44
+Fixpoint,count_R0,Define counting R0 function,collatz_part_1.v,45,52
+Fixpoint,count_R1,Define counting R1 function,collatz_part_1.v,53,63
+Fixpoint,count_operations,Define counting function for R0 and R1 in sequence,collatz_part_1.v,64,76
+Definition,valid_operation,Define valid operation,collatz_part_1.v,77,83
+Fixpoint,nth_sequence_value,Define the k-th value in sequence,collatz_part_1.v,84,90
+Definition,sequence_end,Define the final value of sequence,collatz_part_1.v,91,94
+Definition,valid_sequence,Define sequence validity: each operation in the sequence is legal,collatz_part_1.v,95,100
+Fixpoint,repeat_R0,R0 pattern repetition constructor - can handle single R0 and consecutive R0,collatz_part_1.v,101,107
+Fixpoint,repeat_R1R0,This function constructs an operation list containing D consecutive R1R0 operation pairs,collatz_part_1.v,108,114
+Fixpoint,count_consecutive_R0,Consecutive R0 pattern counting function,collatz_part_1.v,115,122
+Fixpoint,count_consecutive_R1R0,Consecutive R1R0 pattern counting,collatz_part_1.v,123,131
+Fixpoint,build_k_steps,Main theorem structure,collatz_part_1.v,132,142
+Lemma,even_false_implies_odd,Helper lemma: when Nat.even n = false， n is odd,collatz_part_2.v,5,11
+Lemma,even_true_implies_even,Helper lemma: when Nat.even n = true， n is even,collatz_part_2.v,14,20
+Lemma,even_2x,Immediate lemma: 2*x is always even,collatz_part_2.v,26,29
+Lemma,gt_0_2_pow,Lemma: power of 2 is greater than 0,collatz_part_2.v,32,37
+Lemma,pow2_ge_2,Lemma: power of 2 is greater than or equal to 2,collatz_part_2.v,40,49
+Lemma,mod2_eq1_implies_is_odd,n mod 2 = 1 implies n is odd,collatz_part_2.v,52,64
+Lemma,pow2_gt_0,pow2_gt_0,collatz_part_2.v,72,81
+Lemma,even_div2_mul2,Properties of even numbers divided by 2,collatz_part_2.v,86,94
+Lemma,div2_divmod_eq,First prove the relationship between divmod and division,collatz_part_2.v,100,106
+Lemma,even_ge_1_implies_ge_2,Even number greater than or equal to 1 must be greater than or equal to 2,collatz_part_2.v,111,128
+Lemma,pow2_minus_1_odd,Theorem: 2^d - 1 is odd,collatz_part_2.v,141,174
+Lemma,pow2_even_when_ge_2,Helper lemma: when d>=2， 2^d is even,collatz_part_2.v,183,199
+Lemma,even_decomposition,Even number decomposition lemma,collatz_part_2.v,203,212
+Lemma,odd_decomposition,Odd number decomposition lemma,collatz_part_2.v,215,229
+Lemma,power2_odd_decomposition,Power of 2 odd decomposition lemma,collatz_part_2.v,232,302
+Lemma,even_3n_plus_1,3n+1 outputs even number,collatz_part_2.v,305,316
+Lemma,valid_R1R0_entry_number_properties,Basic properties of R1R0 entry number: >=1 and odd,collatz_part_3.v,5,36
+Lemma,valid_R0R0_entry_number_properties,Basic properties of R0R0 entry number: >=2 and even,collatz_part_3.v,39,63
+Lemma,odd_eq_R1R0_entry_number,Any odd number greater than 1 can be uniquely expressed as an R1R0 entry number,collatz_part_3.v,66,106
+Lemma,even_eq_R0R0_entry_number,Any even number greater than 1 can be uniquely expressed as an R0R0 entry number,collatz_part_3.v,109,137
+Theorem,complete_number_classification,Complete classification of positive integers: odd numbers as R1R0 entries， even numbers as R0R0 entries,collatz_part_3.v,142,175
+Lemma,pow3_expand,Power expansion: 3^(S k) = 3 * 3^k,collatz_part_3.v,178,181
+Lemma,pow3_is_odd,Existence expression for 3^k being odd,collatz_part_3.v,184,193
+Lemma,pow3_minus1_even,Existence expression for 3^k-1 being even,collatz_part_3.v,196,201
+Lemma,pow3_ge1,3^k >= 1,collatz_part_3.v,205,208
+Lemma,pow3_pos,Simple positivity lemma for 3^D (standard recursive definition of Nat.pow),collatz_part_3.v,211,214
+Lemma,single_step_valid,2. Validity of single-step operation,collatz_part_4.v,5,30
+Lemma,valid_sequence_inductive,Inductive property of sequence validity,collatz_part_4.v,33,50
+Lemma,nth_sequence_value_succ,Recursive property of sequence values,collatz_part_4.v,54,59
+Lemma,sequence_end_valid,Validity of sequence end value,collatz_part_5.v,8,19
+Lemma,nth_append_last,Add the last element at position,collatz_part_5.v,22,28
+Lemma,count_operations_app_R0,Property: After adding R0， R0 count increases by 1， R1 count remains unchanged,collatz_part_5.v,31,63
+Lemma,nth_append_two,Property: After adding R1R0， R0 count increases by 1， R1 count increases by 1,collatz_part_5.v,66,77
+Lemma,count_operations_app_R1R0,Property: After adding R1R0， R0 count increases by 1， R1 count increases by 1,collatz_part_5.v,80,108
+Lemma,count_sum_c2,Lemma: Sum of R0 and R1 counts equals total length,collatz_part_5.v,111,129
+Lemma,build_k_steps_valid,Properties of sequence construction,collatz_part_6.v,7,92
+Lemma,build_k_steps_Sn,Auxiliary lemma about sequence construction,collatz_part_6.v,96,107
+Lemma,build_k_steps_length_bound,Sequence length is at least k and at most 2k,collatz_part_6.v,112,139
+Lemma,R0_count_eq_k,R0 count equals k,collatz_part_6.v,142,226
+Lemma,nth_sequence_value_app,Connection property of nth_sequence_value,collatz_part_7.v,24,33
+Lemma,sequence_end_app,Connection property of sequence end value,collatz_part_7.v,36,44
+Lemma,R1R0_two_steps_reduce,Valid input and parity in R1R0 pattern,collatz_part_8.v,5,43
+Lemma,sequence_end_two_steps,Lemma for sequence end value connection calculation - combined with R1R0_two_steps_reduce to derive R1R0_pattern_closure,collatz_part_8.v,46,75
+Lemma,R1R0_pattern_closure,R1R0 pattern closure,collatz_part_8.v,78,181
+Lemma,valid_R1R0_d1_produces_R1R0,When D = 1: On the corresponding entry， repeat_R1R0 generates [R1; R0]， and the consecutive R1R0 count is 1,collatz_part_9.v,4,27
+Lemma,repeat_R1R0_length,The length of repeat_R1R0 is exactly 2 * d,collatz_part_9.v,30,36
+Lemma,repeat_R1R0_count,The number of consecutive R1R0 patterns in repeat_R1R0 equals d,collatz_part_9.v,39,45
+Lemma,valid_R1R0_produces_R1R0_general,For any D >= 1: when m = valid_R1R0_entry_number D n， repeat_R1R0 D is valid on m and contains D consecutive R1R0 patterns,collatz_part_9.v,50,85
+Lemma,R1R0_entry_number_produces_repeat,If m = valid_R1R0_entry_number d n， then repeat_R1R0 d is valid on m and the count is d,collatz_part_9.v,88,94
+Lemma,valid_R1R0_entry_number_d0,Special case d = 0: valid_R1R0_entry_number 0 n = 2 * n,collatz_part_9.v,98,105
+Lemma,repeat_R1R0_output_even,For D >= 1: The final value after applying repeat_R1R0 D on the corresponding entry is even (exists k such that it equals 2*k) To reach a power of 2， this means 3^D * n + (3^D - 1)/2 = n₂ * 2^D₂， Catalan theorem,collatz_part_9.v,109,135
+Lemma,arithmetic_identity_for_R1R0,Catalan theorem application: 3^a - 2^b = 1 only has solution (a，b) = (2，3),collatz_part_9.v,140,156
+Lemma,sequence_end_valid_R1R0_prefix,In R1R0 mode， expression of final value under repeat_R1R0 prefix application,collatz_part_9.v,159,204
+Lemma,valid_R1R0_entry_number_odd,R1R0 entry numbers are always odd,collatz_part_9.v,209,216
+Lemma,repeat_R1R0_snoc,Appending a pair to the end of repeat_R1R0 equals S times repeat,collatz_part_9.v,219,224
+Lemma,build_k_steps_on_valid_R1R0_prefix_simple,For R1R0 entry numbers， build_k_steps generates k pairs of R1R0 operations,collatz_part_9.v,227,257
+Lemma,build_k_steps_on_valid_R1R0,For R1R0 entry numbers， build_k_steps generates D pairs of R1R0 operations (fully expanded),collatz_part_9.v,260,266
+Lemma,repeat_R0_length,The length of the list generated by repeat_R0 equals d,collatz_part_10.v,4,10
+Lemma,repeat_R0_consecutive_count,The number of consecutive R0 patterns in repeat_R0 (when d>=1) equals d,collatz_part_10.v,15,28
+Lemma,valid_R0_d1_produces_R0,Validity of operation sequence corresponding to R0 entry number when d=1,collatz_part_10.v,31,44
+Lemma,R0_pattern_closure,Recursive closure property of R0 pattern,collatz_part_10.v,47,84
+Lemma,valid_R0_produces_R0_general,Validity and count of repeat_R0 D generated by R0 entry number,collatz_part_10.v,87,131
+Lemma,R0_entry_number_produces_repeat,Validity and count of repeat_R0 d generated by R0 entry number (simplified wrapper),collatz_part_10.v,134,141
+Lemma,R0R0_entry_number_produces_repeat,Validity and count of repeat_R0 d generated by R0R0 entry number (alias),collatz_part_10.v,144,150
+Lemma,repeat_R0_output_reaches_one,Final value after repeat_R0 D operation is n,collatz_part_10.v,153,205
+Corollary,repeat_R0_output_one_when_n_one,Corollary: When n=1， the output after D consecutive R0 operations is 1,collatz_part_10.v,208,215
+Lemma,repeat_R0_output_odd_if_n_odd,When n is odd， the final value after repeat_R0 D operation remains odd,collatz_part_10.v,218,228
+Lemma,sequence_end_valid_R0_prefix,Expression of final value under repeat_R0 k prefix application,collatz_part_10.v,231,272
+Lemma,repeat_R0_append_single,Appending a single R0 to the end of repeat_R0 equals S times repeat,collatz_part_10.v,275,286
+Lemma,build_k_steps_on_valid_R0R0_prefix,build_k_steps generates k R0 operations from R0R0 entry number,collatz_part_10.v,289,323
+Lemma,build_k_steps_on_valid_R0R0,build_k_steps fully generates repeat_R0 D from R0R0 entry number,collatz_part_10.v,326,333
+Theorem,build_k_steps_pattern_completeness,Pattern Completeness Theorem,collatz_part_11.v,5,20
+Lemma,repeat_R1R0_output_closed_form,R1R0 Sequence Final Value Exact Closed Form,collatz_part_11.v,23,34
+Lemma,pow3_minus1_twice_half,Multiple Property of 3^D minus 1,collatz_part_11.v,38,48
+Corollary,repeat_R1R0_output_closed_form_no_div,Corollary of R1R0 Final Value Closed Form,collatz_part_11.v,51,60
+Lemma,repeat_R1R0_output_upper_bound,R1R0 Final Value Upper Bound,collatz_part_11.v,65,73
+Lemma,repeat_R1R0_output_lower_bound_linear,R1R0 Final Value Linear Lower Bound: >= 2 * 3^D * n,collatz_part_11.v,76,83
+Lemma,repeat_R1R0_output_lower_bound_const,R1R0 Final Value Constant Lower Bound: >= 3^D - 1,collatz_part_11.v,86,93
+Theorem,R1R0_bounds_summary,R1R0 Combined Bounds Summary: max(2*3^D*n， 3^D - 1) <= output <= 3^D*(2n+1),collatz_part_11.v,96,107
+Theorem,R1R0_power_iff,Necessary and sufficient condition for R1R0 sequence output to be a power of 2,collatz_part_11.v,111,154
+Lemma,R1R0_output_mod6,R1R0 sequence output modulo 6 equals 2,collatz_part_11.v,158,207
+Lemma,R1R0_output_set_iff,R1R0 sequence output set is equivalent to numbers congruent to 2 mod 6,collatz_part_11.v,211,235
+Lemma,R0R0_input_ge_n,R0R0 Input Lower Bound,collatz_part_12.v,5,15
+Lemma,R0R0_output_exact_n,R0R0 Final Value Exactness,collatz_part_12.v,18,25
+Lemma,R0R0_output_bounds,R0R0 Output Value Bounds,collatz_part_12.v,28,37
+Lemma,R0R0_output_minimal_when_one,R0R0 Output Minimum Value,collatz_part_12.v,40,46
+Theorem,R0R0_bounds_summary,R0R0 Combined Bounds Summary Theorem,collatz_part_12.v,51,60
+Theorem,build_k_steps_numeric_bounds_exists,Combined Bounds General Theorem,collatz_part_12.v,64,96
+Lemma,power_2_even_property,If n >= 1， then 2^n is even,collatz_part_13.v,4,15
+Lemma,pow_cancel_lower,If d1 ≤ d2， then cancel left 2^d1 to get o1 = 2^(d2-d1) * o2,collatz_part_13.v,18,29
+Lemma,pow2_times_odd_unique_le,If d1 ≤ d2 and o1，o2 are odd， then 2^d1*o1 = 2^d2*o2 implies d1=d2 and o1=o2,collatz_part_13.v,32,55
+Lemma,pow2_times_odd_unique,Unique decomposition of 2^d * odd number (order of d1，d2 not required),collatz_part_13.v,58,70
+Lemma,valid_R1R0_entry_number_plus1,valid_R1R0_entry_number d n plus 1 can be expressed as 2^d*(2*n+1),collatz_part_13.v,73,85
+Lemma,R1R0_decomposition_unique,R1R0 Uniqueness Decomposition,collatz_part_13.v,88,108
+Lemma,R0R0_decomposition_unique,R0R0 Uniqueness Decomposition,collatz_part_13.v,111,150
+Lemma,R0R0_canonical_factorization,Normalize R0R0 entry (d，n) to n' odd (absorbing 2 factors from n)， preserving value,collatz_part_14.v,6,37
+Lemma,tighten_R1R0_strict_upper,R1R0 Strict Upper Bound: Prove S is strictly less than 2*3^d*(n+1),collatz_part_14.v,44,64
+Lemma,valid_R1R0_entry_number_is_odd,R1R0 entry number itself is odd (d>=1 case),collatz_part_14.v,66,81
+Lemma,R0R0_branch_simplification,Intermediate Lemma: Core auxiliary lemma for simplifying branch logic,collatz_part_14.v,86,125
+Theorem,build_k_steps_numeric_canonical,Every positive integer m uniquely corresponds to canonical representation of R1R0 or R0R0 branch with determined bounds,collatz_part_14.v,130,195
+Lemma,canonical_R1R0_d_log2_bound,Using canonical decomposition to derive logarithmic upper bounds for d (R1R0 branch),collatz_part_15.v,4,26
+Lemma,canonical_R0R0_d_log2_bound,R0R0 branch,collatz_part_15.v,29,53
+Lemma,canonical_d_log2_global,Unified wrapper: For any canonical branch， d <= log2 (m+2),collatz_part_15.v,56,72
+Theorem,odd_leads_R1R0_then_R0_pattern,Canonical pattern transformation theorem: odd numbers leading R1R0 sequence must be followed by R0,collatz_part_16.v,5,59
+Theorem,even_leads_R0_then_R1R0_pattern,Canonical pattern transformation theorem: even numbers leading R0 sequence must be followed by R1R0,collatz_part_16.v,63,127
+Definition,R1R0_entry,Simplified entry predicates that directly include m >= 1 to avoid redundant derivation in subsequent proofs R1R0,collatz_part_16.v,130,132
+Definition,R0R0_entry,Simplified entry predicates that directly include m >= 1 to avoid redundant derivation in subsequent proofs R0,collatz_part_16.v,133,135
+Lemma,next_entry_from_R1R0,R1R0 entry -> next entry (R0R0) construction,collatz_part_16.v,136,172
+Lemma,next_entry_from_R0R0,R0R0 entry -> next entry (R1R0) construction,collatz_part_16.v,175,205
+Theorem,collatz_pattern_cycle_deterministic,Collatz Pattern Cycle Deterministic: Proves that for any starting value m ≥ 1 the Collatz sequence follows a deterministic cycle pattern between R1R0 and R0R0 entries,collatz_part_16_1.v,4,119
+Theorem,collatz_cycle,Collatz cycle branch theorem,collatz_part_16_1.v,123,158
+Definition,canonical_chain,Canonical chain definition R1R0-entry or R0R0-entry patterns,collatz_part_17.v,6,9
+Fixpoint,sum_contributions,Sum contributions R1R0-entry adds 1 R0R0-entry adds d,collatz_part_17.v,10,18
+Fixpoint,chains_to_sequence,Convert chain list to operation sequence,collatz_part_17.v,19,26
+Lemma,length_repeat_R1R0,Length facts for the two patterns,collatz_part_17.v,27,30
+Lemma,count_R1_repeat_R1R0_plus_R0,Count R1 operations in repeat_R1R0 d ++ [R0] pattern,collatz_part_17.v,34,52
+Lemma,count_R0_repeat_R0_plus_R1R0,Helper lemma: Count R0 and R1 operations in repeat_R0 d ++ [R1; R0],collatz_part_17.v,55,73
+Lemma,count_R0_repeat_R1R0_plus_R0,Helper lemma: Count R0 and R1 operations in repeat_R1R0 d ++ [R0],collatz_part_17.v,76,94
+Lemma,count_R1_repeat_R0_plus_R1R0,Helper lemma: Count R1 operations in repeat_R0 d ++ [R1; R0],collatz_part_17.v,97,115
+Lemma,count_operations_canonical_chain,Exact counts for a canonical chain,collatz_part_17.v,118,136
+Theorem,canonical_chain_R0_advantage,R0 advantage theorem: R0 operations always outnumber R1 operations,collatz_part_17.v,140,151
+Lemma,count_repeat_R1R0,Count properties of repeat_R1R0,collatz_part_17.v,156,161
+Lemma,count_repeat_R0,Count properties of repeat_R0,collatz_part_17.v,164,169
+Lemma,count_operations_app,Count operations for concatenated sequences: additive property,collatz_part_17.v,174,191
+Lemma,count_operations_chains_sequence,Helper lemma: chain list count equals sum of individual chain counts,collatz_part_17.v,194,254
+Theorem,generalized_concatenated_chains_R0_advantage,Generalized theorem: R0 advantage of concatenated canonical chains,collatz_part_17.v,257,346
+Definition,extract_simple_chains,Extract simple chains from full chain information: keep only (b，d) pairs,collatz_part_17.v,350,353
+Lemma,extract_simple_chains_nonempty,Non-empty chains: simple chains non-empty iff original chains non-empty,collatz_part_17.v,354,366
+Lemma,extract_simple_chains_valid,Valid chains: d >= 1 preserved in simple chain extraction,collatz_part_17.v,369,384
+Lemma,canonical_chains_to_sequence,Canonical chains to sequence: equivalence between two representations,collatz_part_17.v,387,399
+Theorem,generalized_valid_chains_sequence_R0_advantage,Generalized R0 advantage theorem: valid chain sequences maintain R0 advantage,collatz_part_17.v,402,454
+Definition,valid_chain_sequence_condition,Valid chain sequence condition: defines valid R1R0-entry or R0R0-entry chains,collatz_part_17.v,459,466
+Corollary,valid_chains_sequence_R0_advantage_corollary,Corollary: R0 advantage for valid chain sequences using condition definition,collatz_part_17.v,467,508
+Definition,valid_chains_condition,Valid chains condition non-empty list with valid chain sequence conditions,collatz_part_18.v,4,11
+Definition,chains_R0_advantage,Chains R0 advantage R0 operations exceed R1 operations with specific difference,collatz_part_18.v,12,20
+Corollary,universal_R0_advantage_bounds,Universal R0 advantage bounds precise counts for canonical chains,collatz_part_18.v,21,35
+Lemma,valid_sequence_app,Valid sequence concatenation combining two valid sequences,collatz_part_18.v,38,68
+Lemma,log2_mul_pow2,Logarithm of product with power of 2 log2q * 2^d = log2q + d,collatz_part_18.v,71,86
+Lemma,R1R0_entry_d_log2_bound,Log2 bound for R1R0 entry depth d <= log2m + 1,collatz_part_18.v,89,109
+Lemma,extract_simple_chains_app,Extract simple chains concatenation distributes over list append,collatz_part_18.v,112,120
+Lemma,sum_contributions_app,Sum contributions concatenation additive over list append,collatz_part_18.v,123,131
+Lemma,chains_R0_advantage_app,Chains R0 advantage concatenation preserved under list append,collatz_part_18.v,134,164
+Theorem,R1R0_to_R0R0_closure,定理R1R0到R0R0的闭包,collatz_part_18_1.v,5,53
+Theorem,R0R0_to_R1R0_reverse,R0到R1R0的闭包,collatz_part_18_1.v,56,96
+Theorem,R1R0_full_cycle_step,从 R1R0 分支出发，经过 R0R0 分支，再回到 R1R0 分支,collatz_part_18_1.v,100,129
+Theorem,R0R0_full_cycle_step,R0R0 分支也有对称的完整循环步骤,collatz_part_18_1.v,132,170
+Record,cycle_state,循环状态与迭代关系,collatz_part_18_1.v,174,180
+Definition,mk_cycle_state,构造循环状态,collatz_part_18_1.v,181,184
+Definition,valid_cycle_state,循环状态的有效性,collatz_part_18_1.v,185,198
+Inductive,cycle_step,循环步骤关系,collatz_part_18_1.v,199,236
+Inductive,cycle_steps,循环步骤的多步关系,collatz_part_18_1.v,237,246
+Definition,cycle_measure,循环步骤的度量,collatz_part_18_1.v,247,256
+Theorem,cycle_steps_convergence_R1R0,循环步骤的收敛性,collatz_part_18_1.v,257,291
+Theorem,cycle_steps_convergence_R0R0,R0R0 分支收敛性定理,collatz_part_18_1.v,294,341
+Theorem,cycle_state_reachability,循环状态可达性定理,collatz_part_18_1.v,344,375
+Theorem,canonical_R0_advantage,规范链的R0操作优势定理,collatz_part_18_1.v,378,412
+Lemma,valid_cycle_state_cycle_step,循环步性质封装,collatz_part_18_1.v,415,445
+Theorem,chain_characterization_with_advantage,对于任何有效的循环状态，存在一个有限步数k，使得经过k次循环步后，状态仍然保持在同一分支,collatz_part_18_1.v,448,491
+Theorem,R1R0_chain_ratio_formula,R1R0链比例公式,collatz_part_18_1.v,496,508
+Theorem,R0_chain_ratio_formula,R0链比例公式,collatz_part_18_1.v,511,523
+Theorem,unified_chain_ratio_formula,统一比例公式,collatz_part_18_1.v,526,540
+Theorem,R0_advantage_ratio_analysis,比例优势分析,collatz_part_18_1.v,543,556
+Theorem,total_operations_ratio_formula,序列组合的比例公式,collatz_part_18_1.v,559,576
+Theorem,pattern_toggle_deterministic,pattern_toggle_deterministic : 确定性模式切换定理,collatz_part_18_1.v,579,667
+Theorem,mod62_R0advantage,R0 advantage for the concatenated canonical chains.,collatz_part_18_1.v,670,771
+Theorem,mod62_macrostep_R0_net_advantage_ge_2,Macro-step advantage: mod6=2 numbers gain at least 2 net-R0 advantage,collatz_part_18_1.v,774,805
+Theorem,direct_conversion_to_mod6_2_orbit,Any valid m can reach a mod6=2 orbit,collatz_part_18_1.v,808,949
+Theorem,mod62_macrostep_iterated_lower_bound,迭代宏步展开的下界,collatz_part_18_1.v,952,1031
+Theorem,global_mod62_advantage_growth,a combination of the two previous theorems.,collatz_part_18_1.v,1034,1069
+Theorem,R0_advantage_growth,r0 优势随序列长度增长定理,collatz_part_18_1.v,1072,1126
+Theorem,R0_advantage_lower_bound,R0优势下界定理,collatz_part_18_1.v,1129,1176
+Lemma,build_k_steps_add,build_k_steps decomposition: k1 steps followed by k2 steps equals building from intermediate state,collatz_part_19.v,4,30
+Theorem,direct_conversion_to_mod6_2_orbit_canonical,Canonical conversion to mod6=2 orbit using build_k_steps as canonical prefix,collatz_part_19.v,33,174
+Theorem,mod62_R0advantage_canonical,Canonical R0 advantage for mod6=2 numbers: two-step chain with positive contribution,collatz_part_19.v,177,329
+Fixpoint,factor2_bounded,Extract 2-factors from n with bounded iterations,collatz_part_19.v,334,344
+Definition,factor2,Extract 2-factors from n (full decomposition),collatz_part_19.v,345,346
+Definition,factor2_exp,Exponent of 2 in n's prime factorization,collatz_part_19.v,347,348
+Definition,factor2_odd,Odd part of n after removing all factors of 2,collatz_part_19.v,349,354
+Lemma,factor2_bounded_decomp,factor2_bounded decomposition: n = q * 2^d,collatz_part_19.v,355,389
+Lemma,factor2_bounded_odd,factor2_bounded preserves oddness of the quotient,collatz_part_19.v,392,436
+Lemma,factor2_spec_decomp,factor2 decomposition: n = odd_part * 2^exponent,collatz_part_19.v,439,449
+Lemma,factor2_spec_odd,factor2 odd part is always odd for n >= 1,collatz_part_19.v,452,459
+Definition,canonical_mod62_macrostep_chains,Canonical macro-step for mod6=2,collatz_part_19.v,462,471
+Definition,canonical_mod62_macrostep_end,End state after canonical macro-step for mod6=2,collatz_part_19.v,472,478
+Fixpoint,canonical_mod62_iterated_chains,Iterated canonical macro-steps for mod6=2: concatenate chains from t steps,collatz_part_19.v,479,489
+Fixpoint,canonical_mod62_iterated_end,Final state after t iterated canonical macro-steps for mod6=2,collatz_part_19.v,490,496
+Lemma,canonical_mod62_macrostep_spec,Canonical macro-step preserves mod6=2 and has positive contribution,collatz_part_19.v,497,696
+Theorem,mod62_macrostep_iterated_lower_bound_canonical,Iterated canonical macro-steps for mod6=2: lower bound on total contributions,collatz_part_19.v,699,808
+Theorem,global_mod62_advantage_growth_canonical,Global advantage growth for mod6=2: linear growth of contributions,collatz_part_19.v,811,854

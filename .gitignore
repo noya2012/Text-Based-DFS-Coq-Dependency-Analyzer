@@ -38,10 +38,4 @@ venv.bak/
 *~
 
 # Project specific - generated output files
-code_index.txt
-namelist.txt
-theorem_deps.csv
-theorem_reverse_deps.csv
-theorem_deps.dot
-code_lite.txt
-theorem_with_deps/
+
