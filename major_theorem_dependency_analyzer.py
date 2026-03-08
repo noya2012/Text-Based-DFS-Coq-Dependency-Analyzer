@@ -86,6 +86,10 @@ THEOREM_LIKE_KINDS = {
 LEMMA_LIKE_KINDS = {
     'Lemma',
 }
+AXIOM_LIKE_KINDS = {
+    'Axiom',
+    'Axioms',
+}
 
 
 def classify_kind_to_123(kind: str) -> int:
@@ -97,7 +101,16 @@ def classify_kind_to_123(kind: str) -> int:
     return 3
 
 
-def get_brackets_for_name(name: str, code_index: Dict[str, IndexEntry], include_location: bool = False) -> str:
+def is_axiom_kind(kind: str) -> bool:
+    return (kind or "").strip() in AXIOM_LIKE_KINDS
+
+
+def get_brackets_for_name(
+    name: str,
+    code_index: Dict[str, IndexEntry],
+    include_location: bool = False,
+    mark_axiom: bool = False,
+) -> str:
     """Get brackets for a name based on its type.
     
     Args:
@@ -115,6 +128,9 @@ def get_brackets_for_name(name: str, code_index: Dict[str, IndexEntry], include_
         base = f"░{name}░"
     else:
         base = f"[{name}]"
+
+    if mark_axiom and is_axiom_kind(kind):
+        base = f"►{base}◄"
     
     if include_location and entry:
         location = f"{entry.file},{entry.line},{entry.line_end}"
@@ -271,6 +287,7 @@ def print_dependency_analysis(theorem_name, position, dep_tree, levels, code_ind
     add_line("Bracket notation:")
     add_line("  - █name█ : Theorem-like (Theorem/Proposition/Corollary/Fact)")
     add_line("  - ░name░ : Lemma")
+    add_line("  - ►[name]◄ : Axiom (highlighted in the dependency tree)")
     add_line("  - [name] : Other (Definition/Fixpoint/Inductive/Axiom/...)")
     add_line("")
     
@@ -291,7 +308,7 @@ def print_dependency_analysis(theorem_name, position, dep_tree, levels, code_ind
         items = list(node.items())
         for i, (dep, children) in enumerate(items):
             connector = "└── " if i == len(items) - 1 else "├── "
-            add_line(f"{prefix}{connector}{get_brackets_for_name(dep, code_index)}")
+            add_line(f"{prefix}{connector}{get_brackets_for_name(dep, code_index, mark_axiom=True)}")
             
             extension = "    " if is_last and i == len(items) - 1 else "│   "
             print_tree(children, prefix + extension, i == len(items) - 1)
@@ -327,6 +344,15 @@ def main():
     position = find_theorem_position(theorem_name, theorem_positions)
     if position is None:
         print(f"Error: theorem '{theorem_name}' not found")
+        # Write error message to file
+        error_filename = os.path.join(output_dir, f"{theorem_name}.txt")
+        os.makedirs(output_dir, exist_ok=True)
+        try:
+            with open(error_filename, 'w', encoding='utf-8') as f:
+                f.write("The theorem has not been strictly verified, so dependency information is not available.")
+            print(f"Error message written to: {error_filename}")
+        except Exception as e:
+            print(f"Failed to write error file: {e}")
         sys.exit(1)
     if theorem_name not in dependencies:
         print(f"Theorem '{theorem_name}' has no dependencies")

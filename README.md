@@ -133,7 +133,7 @@ collatz_part_2.v
 This project has been tested and verified with **Coq 8.10.2**. The design is generic and can be applied to analyze dependencies in similar theorem proving codebases. However, it has not been tested on newer versions such as Rocq (the successor to Coq).
 
 ### Tested Project
-This toolchain has been successfully tested on the Coq project [collatz-formalization-coq](https://github.com/noya2012/collatz-formalization-coq).
+This toolchain has been successfully tested on the Coq project [collatz-conjecture-coq-framework](https://github.com/noya2012/collatz-conjecture-coq-framework).
 
 ## Example Output
 
@@ -144,11 +144,14 @@ Dependency tree:
 │   └── [basic_definition]
 ├── ░helper_lemma2░
 │   └── [utility_function]
+├── ►[axiom_definition]◄
+│   └── [core_definition]
 └── [core_definition]
 
 Bracket notation:
   - █name█ : Theorem-like (Theorem/Proposition/Corollary/Fact)
   - ░name░ : Lemma
+  - ►[name]◄ : Axiom (highlighted in the dependency tree)
   - [name] : Other (Definition/Fixpoint/Inductive/Axiom/...)
 ```
 
